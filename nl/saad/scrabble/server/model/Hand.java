@@ -72,6 +72,32 @@ public class Hand {
         }
     }
 
+    public boolean hasTilesFor(String letters) {
+        if (letters.length() > LIMIT) { // letters cannot be more than 7
+            return false;
+        }
+        char[] current_letters = new char[LIMIT]; // temporary hand
+        for (int i = 0; i < hand.size(); i++) {
+            current_letters[i] = hand.get(i).getLetter();
+        }
+
+        // traverse letters given
+        for (int i = 0; i < letters.length(); i++) {
+            boolean found = false;
+            for (int j = 0; j < LIMIT; j++) {
+                if (current_letters[j] == letters.charAt(i)) { // found matching letter in hand
+                    current_letters[j] = ' '; // remove from temporary hand
+                    found = true;
+                }
+            }
+            if (!found) { // some letter was not found == hand does not have tiles for it
+                return false;
+            }
+        }
+
+        return true; // all letters found
+    }
+
     // get tile from letter if present
     public Tile getTile(char letter) throws Exception {
         if (hasLetter(letter)) { // if tile with letter found

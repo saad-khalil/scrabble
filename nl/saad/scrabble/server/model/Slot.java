@@ -8,9 +8,7 @@ public class Slot {
     
     public Slot(String premiumType) { this.premiumType = premiumType; }
 
-    public static boolean isValid(int col, int row) {
-        return col >= 0 && col < Board.N && row >= 0 && row < Board.N;
-    }
+    public static boolean isValid(int r, int c) { return c >= 0 && c < Board.N && r >= 0 && r < Board.N; }
 
     public String getPremiumType() { return premiumType; }
 
