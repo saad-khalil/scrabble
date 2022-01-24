@@ -20,7 +20,7 @@ running (connection loss, invalid input).
 7. Pre-conditions, post-conditions and invariants for the most significant class.
 8. Unit tests for the most significant/complex class.
 
-The protocol is defined in Protocol.pdf.
+The protocol is defined in nl.saad.scrabble.server.model.Protocol.pdf.
 
 ## Specifics
 - 15x15 (A-O, 1-15) gameboard, 100 letter tiles, a letter bag, and two racks
