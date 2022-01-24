@@ -4,9 +4,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
+//import static org.hamcrest.MatcherAssert.assertThat;
+//import static org.hamcrest.CoreMatchers.containsString;
+//import static org.hamcrest.CoreMatchers.not;
 import org.junit.jupiter.api.*;
 
 import nl.saad.scrabble.client.Client;
