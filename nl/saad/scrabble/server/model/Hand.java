@@ -1,5 +1,7 @@
 package nl.saad.scrabble.server.model;
 
+import nl.saad.scrabble.protocol.Protocol;
+
 import java.util.ArrayList;
 
 
@@ -34,10 +36,11 @@ public class Hand {
     public boolean hasLetter(char letter) { return getLetterIndex(letter) != -1; }
 
     public String refill() throws Exception {
-        if (bag.isEmpty()) {
-            throw new Exception(Protocol.Error.E007.getDescription());
-        }
         int tilesNeeded = Math.min(bag.size(), LIMIT - hand.size());
+        if (bag.isEmpty() || bag.size() < tilesNeeded) { // empty or insufficient tiles
+            throw new Exception(Protocol.Error.E012.getDescription());
+        }
+
         StringBuilder newLetters = new StringBuilder();
         for (int i = 0; i < tilesNeeded; i++) {
             Tile draw = bag.drawRandomTile();

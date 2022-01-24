@@ -1,6 +1,6 @@
 package nl.saad.scrabble.server.model;
 
-import nl.saad.scrabble.server.model.Protocol;
+import nl.saad.scrabble.protocol.Protocol;
 
 public class Word {
     private final String letters;

@@ -1,4 +1,4 @@
-package nl.saad.scrabble.server.model;
+package nl.saad.scrabble.protocol;
 
 public class Protocol {
     public static final char MESSAGE_SEPARATOR = '\u001e';
@@ -37,7 +37,7 @@ public class Protocol {
         E009("It is not your turn"),
         E010("Invalid request: wrong number of players | X"),
         E011("Word not connected to other tiles"),
-        E012("Bag is empty."),
+        E012("Insufficient tiles in bag to refill."),
         E013("Player name cannot be empty."),
         E014("1st move must cover the center.");
 

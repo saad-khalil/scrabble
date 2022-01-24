@@ -42,10 +42,7 @@ public class Bag { // tiles bank of tiles for every game
     public void addTile(Tile tile) { tiles.add(tile); }
 
     // draw random tile from bag
-    public Tile drawRandomTile() throws Exception {
-        if (isEmpty()) {
-            throw new Exception(Protocol.Error.E012.getDescription());
-        }
+    public Tile drawRandomTile() {
         int rand_idx = (int) (Math.random() * tiles.size());
         Tile t = tiles.get(rand_idx);
         tiles.remove(rand_idx);

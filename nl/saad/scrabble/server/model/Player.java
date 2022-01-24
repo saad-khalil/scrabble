@@ -1,6 +1,8 @@
 package nl.saad.scrabble.server.model;
 
 
+import nl.saad.scrabble.protocol.Protocol;
+
 public class Player {
     private String name;
     private Hand hand;
@@ -8,7 +10,7 @@ public class Player {
 
     
     public Player(Hand hand) {
-        name = "";
+        name = null;
         setHand(hand);
         score = 0;
     }
