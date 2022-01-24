@@ -14,7 +14,7 @@ public class Hand {
 
         // fill hand first time
         for (int i = 0; i < LIMIT; i++) {
-            Tile draw = bag.drawTile();
+            Tile draw = bag.drawRandomTile();
             hand.add(draw);
         }
     }
@@ -40,7 +40,7 @@ public class Hand {
         int tilesNeeded = Math.min(bag.size(), LIMIT - hand.size());
         StringBuilder newLetters = new StringBuilder();
         for (int i = 0; i < tilesNeeded; i++) {
-            Tile draw = bag.drawTile();
+            Tile draw = bag.drawRandomTile();
             newLetters.append(draw.getLetter());
             hand.add(draw);
         }
