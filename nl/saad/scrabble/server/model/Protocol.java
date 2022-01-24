@@ -32,11 +32,14 @@ public class Protocol {
         E004("Invalid coordinate"),
         E005("Word does not fit on board"),
         E006("Unknown word"),
-        E007("Too few letters left in tilebag to swap"),
+        E007("Too few letters left in tile bag to swap"),
         E008("You do not have the required tiles"),
         E009("It is not your turn"),
         E010("Invalid request: wrong number of players | X"),
-        E011("Word not connected to other tiles");
+        E011("Word not connected to other tiles"),
+        E012("Bag is empty."),
+        E013("Player name cannot be empty."),
+        E014("1st move must cover the center.");
 
         private final String description;
 
@@ -47,5 +50,6 @@ public class Protocol {
         public String getDescription() {
             return this.description;
         }
+
     }
 }
