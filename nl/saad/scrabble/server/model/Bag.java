@@ -57,4 +57,8 @@ public class Bag { // tiles bank of tiles for every game
         }
     }
 
+    public void setTiles(ArrayList<Tile> newBag) {
+        tiles.clear();
+        tiles.addAll(newBag);
+    }
 }

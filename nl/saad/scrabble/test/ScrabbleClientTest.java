@@ -95,7 +95,7 @@ class ScrabbleClientTest {
 //		outContent.reset();
 		
 		// Exit the program
-		client.sendExit();
+//		client.sendExit();
 	}
 	
 	@AfterAll

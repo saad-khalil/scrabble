@@ -6,6 +6,10 @@ Scrabble is a word game where you can score points creating words by placing let
 This is a Java-based scrabble game designed with a client-server architecture using sockets and JavaFX based GUI, 
 which allows 2+ people on a network to connect and play with each other.
 
+
+![Board](/nl/saad/scrabble/resources/board.png)
+
+
 ## Requirements
 1. You should be able to play scrabble with at least 2 people over a network with a client
 & server application. 

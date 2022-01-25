@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -49,12 +50,18 @@ public class Client implements ClientProtocol {
 	 * When errors occur, or when the user terminates a server connection, the
 	 * user is asked whether a new connection should be made.
 	 */
-	public void start() throws ExitProgram, ServerUnavailableException {
+	public void start() throws ExitProgram, ServerUnavailableException, ProtocolException {
 		// To be implemented
+		handleAnnounce();
 		view.showMessage("Enter command: ");
 		String userCommand = view.getCommand();
 		while (!Objects.equals(userCommand, "EXIT")) {
-			handleUserInput(userCommand);
+			handleAnnounce();
+			if (!Objects.equals(userCommand, "")) {
+				handleUserInput(userCommand);
+			}
+			userCommand = view.getCommand();
+
 		}
 	}
 
@@ -64,7 +71,7 @@ public class Client implements ClientProtocol {
 	 *   when "i Name" is called, send a checkIn request for Name)
 	 * - If the input is invalid, show a message to the user and print the help menu.
 	 *
-	 * @param input The user input.
+	 * @param command The user input.
 	 * @throws ExitProgram               	When the user has indicated to exit the
 	 *                                    	program.
 	 * @throws ServerUnavailableException 	if an IO error occurs in taking the
@@ -94,11 +101,11 @@ public class Client implements ClientProtocol {
 			case "SENDCHAT":
 				doSendChat(formattedCommand);
 			case "MAKEMOVE":
-				doInformMove(formattedCommand);
+				doMakeMove(formattedCommand);
 			case "EXIT":
 				sendExit(formattedCommand);
 			default:
-				view.showMessage("Invalid command.");
+				view.showMessage("Invalid command: " + command);
 		}
 	}
 
@@ -118,7 +125,8 @@ public class Client implements ClientProtocol {
 		clearConnection();
 		while (serverSock == null) {
 			String host = "127.0.0.1";
-			int port = 8888;
+
+			int port = view.getInt("Please enter the server port.");
 
 			// try to open a Socket to the server
 			try {
@@ -240,32 +248,45 @@ public class Client implements ClientProtocol {
 		}
 	}
 
-	@Override
+	@Override // inform queue, inform move
 	public void handleAnnounce() throws ServerUnavailableException, ProtocolException {
 		String msg = readLineFromServer();
-		view.showMessage("[SERVER]: " + msg);
-	}
+		String[] args = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
+		String type = args[0];
+		String content = args[1];
+		content = content.replace(String.valueOf(Protocol.MESSAGE_SEPARATOR), ""); // remove terminator
 
-	@Override
-	public void handleInformQueue() throws ServerUnavailableException, ProtocolException {
-//		sendMessage(String.valueOf(ProtocolMessages.HELLO));
-//		if (readLineFromServer().contains(String.valueOf(ProtocolMessages.HELLO))) {
-//			System.out.println("Welcome to the Hotel booking system of hotel! Press 'h' for help menu: ");
-//		} else {
-//			throw new ProtocolException("Can't do the handshake");
-//		}
-		String msg = readLineFromServer();
+		switch(type) {
+			case "ANNOUNCE":
+			case "NOTIFYTURN":
+			case "NOTIFYCHAT":
+			case "PLAYERDISCONNECTED":
+			case "GAMEOVER":
+			case "INFORMMOVE":
+			case "INFORMQUEUE":
+				view.showMessage("["+type+"]: " + content);
+			case "NEWTILES":
+				view.printBoard(content);
+		}
+
 	}
 
 	@Override
 	public void handleNotifyTurn() throws ServerUnavailableException, ProtocolException {
-		String msg = readLineFromServer();
+//		String msg = readLineFromServer();
+//		view.showMessage("[SERVER]: " + msg);
+	}
+
+	@Override
+	public void handleNotifyChat() throws ServerUnavailableException, ProtocolException {
+//		String msg = readLineFromServer();
+//		view.showMessage("[SERVER]: " + msg);
 	}
 
 	@Override
 	public void handleNewTiles() throws ServerUnavailableException, ProtocolException {
-		String msg = readLineFromServer();
-		view.printBoard(msg);
+//		String msg = readLineFromServer();
+//		view.printBoard(msg);
 	}
 
 	@Override
@@ -274,7 +295,7 @@ public class Client implements ClientProtocol {
 	}
 
 	@Override
-	public void doInformMove(String c) throws ServerUnavailableException {
+	public void doMakeMove(String c) throws ServerUnavailableException {
 		sendMessage(c);
 	}
 
@@ -295,7 +316,7 @@ public class Client implements ClientProtocol {
 	 * 
 	 * @param args 
 	 */
-	public static void main(String[] args) throws ExitProgram, ServerUnavailableException {
+	public static void main(String[] args) throws ExitProgram, ServerUnavailableException, ProtocolException {
 		(new Client()).start();
 	}
 

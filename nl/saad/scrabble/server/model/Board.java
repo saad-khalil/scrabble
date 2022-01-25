@@ -39,6 +39,7 @@ public class Board {
 
     public String getSlotString(int r, int c) { return board[r][c].toString(); }
 
+    public void setFirstMove(boolean fm) { firstMove = fm; }
     // place tile on given indexes (no checks)
     public void placeTile(int r, int c, Tile tile) { board[r][c].setTile(tile); }
 

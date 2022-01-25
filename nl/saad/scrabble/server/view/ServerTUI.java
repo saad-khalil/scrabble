@@ -22,12 +22,21 @@ public class ServerTUI implements ServerView {
 	}
 	
 	@Override
-	public String getString(String question) { return scan.next(); }
+	public String getString(String question) {
+		console.println(question);
+		return scan.next();
+	}
 
 	@Override
-	public int getInt(String question) { return scan.nextInt(); }
+	public int getInt(String question) {
+		console.println(question);
+		return scan.nextInt();
+	}
 
 	@Override
-	public boolean getBoolean(String question) { return scan.nextBoolean(); }
+	public boolean getBoolean(String question) {
+		console.println(question);
+		return scan.nextBoolean();
+	}
 
 }

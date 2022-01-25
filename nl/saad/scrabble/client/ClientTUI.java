@@ -25,17 +25,26 @@ public class ClientTUI implements ClientView {
 
 	@Override
 	public void showMessage(String message) {
-		console.println(message);
+		console.println(message.replace(String.valueOf(Protocol.MESSAGE_SEPARATOR), ""));
 	}
 
 	@Override
-	public String getString(String question) { return scan.next(); }
+	public String getString(String question) {
+		console.println(question);
+		return scan.next();
+	}
 
 	@Override
-	public int getInt(String question) { return scan.nextInt(); }
+	public int getInt(String question) {
+		console.println(question);
+		return scan.nextInt();
+	}
 
 	@Override
-	public boolean getBoolean(String question) { return scan.nextBoolean(); }
+	public boolean getBoolean(String question) {
+		console.println(question);
+		return scan.nextBoolean();
+	}
 
 	@Override
 	public void printHelpMenu() {
@@ -55,31 +64,36 @@ public class ClientTUI implements ClientView {
 		String[] rows = textBoard.split(";");
 
 		for (String row : rows) {
-			String[] rowValues = textBoard.split(",");
+			String[] rowValues = row.split(",");
 
 			for (String cell : rowValues) {
-				String bgColor = ANSI.BLACK_BACKGROUND;
-				String fgColor = ANSI.WHITE;
+				String bgColor = ANSI.WHITE_BACKGROUND_BRIGHT;
+				String fgColor = ANSI.BLACK;
 				switch (cell) {
 					case "C":
-						bgColor = ANSI.PURPLE_BACKGROUND_BRIGHT;
-					case "2L":
-						bgColor = ANSI.CYAN_BACKGROUND_BRIGHT;
 					case "2W":
-						bgColor = ANSI.PURPLE_BACKGROUND_BRIGHT;
+						bgColor = ANSI.PURPLE_BACKGROUND;
+						break;
+					case "2L":
+						bgColor = ANSI.CYAN_BACKGROUND;
+						break;
 					case "3L":
 						bgColor = ANSI.BLUE_BACKGROUND;
+						break;
 					case "3W":
-						bgColor = ANSI.RED_BACKGROUND_BRIGHT;
+						bgColor = ANSI.RED_BACKGROUND;
+						break;
 					default:
-						fgColor = ANSI.BLACK;
-
+						fgColor = ANSI.WHITE;
 				}
-				console.print( bgColor + fgColor + cell);
+				if (cell.length() == 1) cell = "   " + cell + "  ";
+				else cell = "  " + cell + "  ";
+
+				System.out.print( fgColor + bgColor + cell);
 			}
-			console.println();
+			System.out.println(ANSI.RESET);
 		}
-		console.println(ANSI.BLACK_BACKGROUND + ANSI.WHITE); // reset colors?
+		System.out.println(ANSI.RESET); // reset colors?
 	}
 
 }

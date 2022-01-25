@@ -1,5 +1,6 @@
 package nl.saad.scrabble.server.controller;
 
+import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.Protocol;
 
 import java.io.BufferedReader;
@@ -79,7 +80,7 @@ public class ClientHandler implements Runnable {
 	 * @param msg command from client
 	 * @throws IOException if an IO errors occur.
 	 */
-	private void handleCommand(String msg) throws IOException {
+	private void handleCommand(String msg) {
 		// To be implemented
 		String[] message = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
 		String command = "q";
@@ -94,26 +95,48 @@ public class ClientHandler implements Runnable {
 		if (message.length > 2) {
 			param2 = message[2];
 		}
-		switch (command) {
-			case "REQUESTGAME":
-				this.out.write(srv.doRequestGame(parseInt(param1)));
-				break;
-			case "STARTGAME":
-				this.out.write(srv.doStartGame(param1));
-				break;
-			case "INFORMMOVE":
-				this.out.write(srv.doMakeMove(param1));
-				break;
-			case "SENDCHAT":
-				this.out.write(srv.doNotifyChat(param1));
-				break;
-			case "EXIT":
-				shutdown();
-				this.out.write(srv.doPlayerDisconnected(name));
-				break;
-			default:
-				this.out.write("Unknown Command");
-				break;
+		try {
+			switch (command) {
+				case "REQUESTGAME":
+					sendMessage(srv.doRequestGame(parseInt(param1)));
+					break;
+				case "STARTGAME":
+					sendMessage(srv.doStartGame(param1));
+					break;
+				case "INFORMMOVE":
+					sendMessage(srv.doMakeMove(param1));
+					break;
+				case "SENDCHAT":
+					sendMessage(srv.doNotifyChat(param1));
+					break;
+				case "EXIT":
+					shutdown();
+					sendMessage(srv.doPlayerDisconnected(name));
+					break;
+				default:
+					sendMessage("Unknown Command.");
+					break;
+			}
+		}
+		catch (Exception e) {
+			sendMessage("[ERROR] " + e.getMessage());
+		}
+
+	}
+
+	public void sendMessage(String msg) {
+		System.out.println("Sending... " + msg);
+		if (out != null) {
+			try {
+				out.write(msg  + Protocol.MESSAGE_SEPARATOR);
+				out.newLine();
+				out.flush();
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+//				sendMessage("[ERROR] " + e.getMessage() + + Protocol.MESSAGE_SEPARATOR);
+			}
+		} else {
+			sendMessage("[ERROR] Out is null.");
 		}
 	}
 

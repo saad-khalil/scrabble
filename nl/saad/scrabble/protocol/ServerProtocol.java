@@ -33,6 +33,17 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
+	public String doInformQueue (String c);
+
+	public String doInformMove (String c);
+
+	/**
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 */
 	public String doNewTiles(String c);
 
 	/**
@@ -57,10 +68,10 @@ public interface ServerProtocol {
 	 *
 	 *
 	 * @requires
-	 * @param
+	 * @param protocol (name)
 	 * @return
 	 */
-	public String doAnnounce(String c);
+	public String doAnnounce(String protocol, String c);
 
 	/**
 	 *

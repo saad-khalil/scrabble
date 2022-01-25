@@ -21,6 +21,7 @@ public interface ClientProtocol {
 	 */
 	public void handleAnnounce() throws ServerUnavailableException, ProtocolException;
 
+
 	/**
 	 *
 	 *
@@ -29,8 +30,7 @@ public interface ClientProtocol {
 	 * @return
 	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void handleInformQueue() throws ServerUnavailableException, ProtocolException;
-
+	public void handleNotifyChat() throws ServerUnavailableException, ProtocolException;
 
 	/**
 	 *
@@ -70,7 +70,7 @@ public interface ClientProtocol {
 	 * @return
 	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doInformMove(String c) throws ServerUnavailableException;
+	public void doMakeMove(String c) throws ServerUnavailableException;
 
 	/**
 	 *

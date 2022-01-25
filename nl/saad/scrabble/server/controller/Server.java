@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import nl.saad.scrabble.exceptions.ExitProgram;
+import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.protocol.ServerProtocol;
 import nl.saad.scrabble.server.view.ServerTUI;
 
@@ -43,6 +44,7 @@ public class Server implements Runnable, ServerProtocol {
 		clients = new ArrayList<>();
 		view = new ServerTUI();
 		next_client_no = 1;
+		ssock = null;
 	}
 
 	/**
@@ -67,6 +69,8 @@ public class Server implements Runnable, ServerProtocol {
 					ClientHandler handler = new ClientHandler(sock, this, name);
 					new Thread(handler).start();
 					clients.add(handler);
+					doInformQueue("New client [" + name + "] connected!");
+					doNewTiles("");
 				}
 
 			} catch (ExitProgram e1) {
@@ -146,45 +150,63 @@ public class Server implements Runnable, ServerProtocol {
 
 	@Override
 	public String doStartGame(String c) {
-
+		doAnnounce("STARTGAME","Starting the game...");
 		return c;
 	}
 
 	@Override
-	public String doAnnounce(String c) {
-
+	public String doAnnounce(String protocol, String c) {
+		for (int i = 0; i < clients.size(); i++) { // broadcast
+			clients.get(i).sendMessage(protocol + Protocol.UNIT_SEPARATOR + c + Protocol.MESSAGE_SEPARATOR);
+		}
 		return c;
+	}
+
+	@Override
+	public String doInformMove(String move) {
+		doAnnounce("INFORMMOVE", move);
+		return move;
 	}
 
 
 	@Override
-	public String doMakeMove(String c) {
-
-		return c;
+	public String doMakeMove(String move) {
+//		gameController.makeMove()
+		return move;
 	}
 
 	@Override
 	public String doNotifyChat(String c) {
+		doAnnounce("NOTIFYCHAT", c);
+		return c;
+	}
 
+	@Override
+	public String doInformQueue(String x) {
+		String c = "Current Clients: " + clients.size();
+		for (int i = 0; i < clients.size(); i++) { // broadcast
+			clients.get(i).sendMessage("INFORMQUEUE" + Protocol.UNIT_SEPARATOR + x + Protocol.MESSAGE_SEPARATOR);
+			clients.get(i).sendMessage("INFORMQUEUE" + Protocol.UNIT_SEPARATOR + c + Protocol.MESSAGE_SEPARATOR);
+		}
 		return c;
 	}
 
 	@Override
 	public String doNewTiles(String c) {
-
+		doAnnounce("NEWTILES",  gameController.getTextBoard());
 		return c;
 	}
 
 	@Override
-	public String doPlayerDisconnected(String c) {
-
-		return c;
+	public String doPlayerDisconnected(String p) {
+		doAnnounce("PLAYERDISCONNECTED",  p);
+		return p;
 	}
 
 	@Override
 	public String doGameOver() {
-
-		return "GAMEOVER?";
+		doAnnounce("GAMEOVER", "GAMEOVER");
+		return "GAMEOVER";
 	}
 
 
