@@ -25,6 +25,20 @@ public class GameController { // all game helpers necessary
         wordChecker = new FileStreamScrabbleWordChecker();
     }
 
+    public void startGame() {
+        bag = new Bag();
+        board = new Board();
+        curr_words.clear();
+        drawnTiles = "";
+        turn = 0;
+        for (Integer pID : playerOrder) {
+            players.put(pID, new Player(new Hand(bag)));
+        }
+
+        board.setFirstMove(true);
+    }
+
+
 
     public int getTurnPlayerID() {
         if (playerOrder.isEmpty()) {
@@ -76,19 +90,6 @@ public class GameController { // all game helpers necessary
     }
 
 
-    // Resets the game
-    public void startGame() {
-        bag = new Bag();
-        board = new Board();
-        curr_words.clear();
-        drawnTiles = "";
-        turn = 0;
-        for (Integer pID : playerOrder) {
-            players.put(pID, new Player(new Hand(bag)));
-        }
-
-        board.setFirstMove(true);
-    }
 
 
     public String getTextBoard() { // convert board to Text String
@@ -109,30 +110,41 @@ public class GameController { // all game helpers necessary
 
 
     public String makeMoveWord(int pID, int r, int c, char direction, String letters) {
-        System.out.println(pID + r + c + direction + letters);
+        System.out.println(pID + " " + r + " " + c + " " + direction + " " + letters);
         Player player = players.get(pID);
         Hand hand = player.getHand();
         Word word = new Word(r, c, direction, letters);
+
+        System.out.println("valid word?");
+//        System.out.println(wordChecker.isValidWord(letters) != null);
+        //wordChecker.isValidWord(letters) != null
         try {
-            if (wordChecker.isValidWord(letters) != null // check word letters
-              && (word.getDirection() != 'H' && word.getDirection() != 'V') // check direction
+            if (  // check word letters
+              (word.getDirection() == 'H' || word.getDirection() == 'V') // check direction
               && board.isValidPlacement(word, hand)) {             // check if indexes and placement are valid then
 
                 board.placeWord(word, hand);
+                System.out.println("placed");
+
                 curr_words.clear();
                 int score = calculateScore(word, board);
                 player.incrementScore(score);
+                System.out.println("scored");
 
                 System.out.println("Words Created: " + curr_words.toString());
                 System.out.println("Score This Turn: " + score);
 
                 drawnTiles = hand.refill();
+                System.out.println("refilled");
+                System.out.println(drawnTiles);
 
                 System.out.println("Bag: " + bag.size());
             }
             else {
                 return "Invalid move.";
             }
+            System.out.println(board);
+
         } catch (Exception e) {
             return e.getMessage();
         }

@@ -49,11 +49,15 @@ public class Board {
         int last_r = -1;
         int last_c = -1;
 
+        System.out.println("have required tiles?");
+
         // 0. do you even have these required tiles?
         if (!hand.hasTilesFor(word.getLetters())) {
             System.out.println(Protocol.Error.E008.getDescription());
             return false;
         }
+
+        System.out.println("valid placement slot?");
 
         // 1. check if valid slot for placement (inside board boundary)
         if (!Slot.isValid(r, c)) {
@@ -70,24 +74,32 @@ public class Board {
             last_r = word.getRow() + word.getLength() - 1;
         }
 
+
+        System.out.println("tail inside?");
+
         // 2. word's tail must not exceed board boundary
         if (!Slot.isValid(last_r, last_c)) {
             System.out.println(Protocol.Error.E005.getDescription());
             return false;
         }
 
+        System.out.println("firstMove: " + firstMove);
 
         // 3. if first move, then it must cover the centre Slot
         if (firstMove) {
             int center = (N-1)/2;
+            System.out.println("on center?");
+
             if (!word.coversIndex(center, center)) {
                 System.out.println(Protocol.Error.E014.getDescription());
+                return false;
             }
-            return false;
+            return true;
         }
         else { // not first move - Checks if the current word placement would join another existing word on the board (append or overlap letter) -- required rule
             r = word.getRow();
             c = word.getCol();
+            System.out.println("overlapping word?");
             for (int i = 0; i < word.getLength(); i++) { // first letter to last character
                 if ((Slot.isValid(r, c) && !isSlotEmpty(r, c))) { // overlapping existing letter slot
                     return true;
@@ -109,6 +121,7 @@ public class Board {
             }
             return false;
         }
+
     }
 
     public void placeWord(Word word, Hand hand) throws Exception {

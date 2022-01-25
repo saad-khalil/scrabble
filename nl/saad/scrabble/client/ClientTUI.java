@@ -103,8 +103,6 @@ public class ClientTUI implements ClientView {
 					case "3W":
 						bgColor = ANSI.RED_BACKGROUND;
 						break;
-					default:
-						fgColor = ANSI.WHITE;
 				}
 				j++;
 				cell = "  " + cell + "  ";
