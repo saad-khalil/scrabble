@@ -32,17 +32,11 @@ public class Player {
 
     public void setHand(Hand hand) { this.hand = hand; }
     
-    public void incrementScore(int value) throws Exception {
-        if (value < 0) {
-            throw new Exception(Protocol.Error.E003.getDescription());
-        }
+    public void incrementScore(int value) {
         score += value;
     }
     
-    public void decrementScore(int value) throws Exception {
-        if (value < 0) {
-            throw new Exception(Protocol.Error.E003.getDescription());
-        }
+    public void decrementScore(int value) {
         score -= value;
     }
 

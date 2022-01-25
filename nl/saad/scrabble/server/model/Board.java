@@ -100,35 +100,53 @@ public class Board {
             return false;
         }
         else { // not first move - Checks if the current word placement would join another existing word on the board (append or overlap letter) -- required rule
-            if (word.getDirection() == 'H') { // Horizontal
-                for (int i = 0; i < word.getLength(); i++) { // first letter to last
-                    if (Slot.isValid(c+i, r-1) && !board[r-1][c+i].isEmpty()) { // top
-                        return true;
-                    }
-                    if (Slot.isValid(c+i, r+1) && !board[r+1][c+i].isEmpty()) { //bottom
-                        return true;
-                    }
-                    if (Slot.isValid(c+i, r) && !board[c+i][r].isEmpty()) { // overlapping existing word
-                        return true;
-                    }
+            r = word.getRow();
+            c = word.getCol();
+            for (int i = 0; i < word.getLength(); i++) { // first letter to last character
+                if ((Slot.isValid(r, c) && !isSlotEmpty(r, c))) { // overlapping existing letter slot
+                    return true;
                 }
-            } else { // Vertical
-                for (int i = 0; i < word.getLength(); i++) { // first letter to last
-                    if (Slot.isValid(c-1, r+i) && !board[r+i][c-1].isEmpty()) { // check left
+                if (word.getDirection() == 'H') { // HORIZONTAL
+                    if ((Slot.isValid(r-1, c) && !isSlotEmpty(r-1, c))  // TOP
+                     || (Slot.isValid(r+1, c) && !isSlotEmpty(r+1, c))){  // BOTTOM
                         return true;
                     }
-                    if (Slot.isValid(c+1, r+i) && !board[r+i][c+1].isEmpty()) { // check right
+                    c++;
+                }
+                else { // VERTICAL
+                    if ((Slot.isValid(r, c-1) && !isSlotEmpty(r, c-1))  // LEFT
+                     || (Slot.isValid(r, c+1) && !isSlotEmpty(r, c+1))) { // RIGHT
                         return true;
                     }
-                    if (Slot.isValid(c, r+i) && !board[c][r+i].isEmpty()) { // overlapping existing word
-                        return true;
-                    }
+                    r++;
                 }
             }
-            System.out.println(Protocol.Error.E011.getDescription());
             return false;
         }
     }
+
+    public void placeWord(Word word, Hand hand) throws Exception {
+        int r = word.getRow();
+        int c = word.getCol();
+
+        for (int i = 0; i < word.getLength(); i++) {
+            char letter = word.charAt(i);
+
+            if (board[r][c].isEmpty()) { // place on non-empty slots along the way
+                if (hand.hasLetter(letter)) { // check if in hand
+                    placeTile(r, c, hand.getTile(letter)); // remove from hand
+                    hand.removeTile(letter);
+                } else { // use blank tile otherwise
+                    placeTile(r, c, new Tile(letter, 0));
+                    hand.removeTile('!');
+                }
+            }
+
+            if (word.getDirection() == 'H') c++; // traverse horizontally over cols
+            else r++; // over rows otherwise
+        }
+    }
+
 
 
 }
