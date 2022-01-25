@@ -1,11 +1,15 @@
 package nl.saad.scrabble.server.controller;
 
+import nl.saad.scrabble.protocol.Protocol;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+
+import static java.lang.Integer.parseInt;
 
 
 public class ClientHandler implements Runnable {
@@ -77,6 +81,40 @@ public class ClientHandler implements Runnable {
 	 */
 	private void handleCommand(String msg) throws IOException {
 		// To be implemented
+		String[] message = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
+		String command = "q";
+		String param1 = null;
+		String param2 = null;
+		if (message.length > 0) {
+			command = message[0];
+		}
+		if (message.length > 1) {
+			param1 = message[1];
+		}
+		if (message.length > 2) {
+			param2 = message[2];
+		}
+		switch (command) {
+			case "REQUESTGAME":
+				this.out.write(srv.doRequestGame(parseInt(param1)));
+				break;
+			case "STARTGAME":
+				this.out.write(srv.doStartGame(param1));
+				break;
+			case "INFORMMOVE":
+				this.out.write(srv.doMakeMove(param1));
+				break;
+			case "SENDCHAT":
+				this.out.write(srv.doNotifyChat(param1));
+				break;
+			case "EXIT":
+				shutdown();
+				this.out.write(srv.doPlayerDisconnected(name));
+				break;
+			default:
+				this.out.write("Unknown Command");
+				break;
+		}
 	}
 
 	/**

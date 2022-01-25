@@ -10,114 +10,78 @@ import nl.saad.scrabble.exceptions.ServerUnavailableException;
  */
 public interface ClientProtocol {
 
+
 	/**
-	 * Handles the following server-client handshake: 1. Client sends
-	 * ProtocolMessages.HELLO to server 2. Server returns one line containing
-	 * ProtocolMessages.HELLO + ProtocolMessages.DELIMITER + (scrabbleName)
-	 * 
-	 * This method sends the HELLO and checks whether the server response is valid
-	 * (must contain HELLO and the name of the scrabble). - If the response is not
-	 * valid, this method throws a ProtocolException. - If the response is valid, a
-	 * welcome message including the scrabble name is forwarded to the view.
-	 * 
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
 	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void handleHello() throws ServerUnavailableException, ProtocolException;
+	public void handleAnnounce() throws ServerUnavailableException, ProtocolException;
 
 	/**
-	 * Sends a checkIn request to the server.
-	 * 
-	 * Given the name of a guest, the doIn() method sends the following message to
-	 * the server: ProtocolMessages.IN + ProtocolMessages.DELIMITER + guestName
-	 * 
-	 * The result (one line) is then retrieved and forwarded to the view.
-	 * 
-	 * @requires guestName != null
-	 * @param guestName Name of the guest
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doIn(String guestName) throws ServerUnavailableException;
+	public void handleInformQueue() throws ServerUnavailableException, ProtocolException;
+
 
 	/**
-	 * Sends a checkOut request to the server.
-	 * 
-	 * Given the name of a guest, the doOut() method sends the following message to
-	 * the server: ProtocolMessages.OUT + ProtocolMessages.DELIMITER + guestName
-	 * 
-	 * The result (one line) is then retrieved and forwarded to the view.
-	 * 
-	 * @requires guestName != null
-	 * @param guestName Name of the guest
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doOut(String guestName) throws ServerUnavailableException;
+	public void handleNotifyTurn() throws ServerUnavailableException, ProtocolException;
 
 	/**
-	 * Sends a room request to the server.
-	 * 
-	 * Given the name of a guest, the doRoom() method sends the following message to
-	 * the server: ProtocolMessages.ROOM + ProtocolMessages.DELIMITER + guestName
-	 * 
-	 * The result (one line) is then retrieved and forwarded to the view.
-	 * 
-	 * @requires guestName != null
-	 * @param guestName Name of the guest
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doRoom(String guestName) throws ServerUnavailableException;
+	public void handleNewTiles() throws ServerUnavailableException, ProtocolException;
 
 	/**
-	 * Sends a safe activation request to the server.
-	 * 
-	 * Given the name of a guest, the doAct() method sends the following message to
-	 * the server: ProtocolMessages.ACT + ProtocolMessages.DELIMITER + guestName +
-	 * ProtocolMessages.DELIMITER + password
-	 * 
-	 * The result (one line) is then retrieved and forwarded to the view.
-	 * 
-	 * @requires guestName != null
-	 * @param guestName Name of the guest
-	 * @param password  (Optional) Password in case of a protected safe
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doAct(String guestName, String password) throws ServerUnavailableException;
+	public void doRequestGame(String c) throws ServerUnavailableException;
 
 	/**
-	 * Requests the bill for a guest at the server.
-	 * 
-	 * Given the name of a guest and the number of nights of the stay, the doBill()
-	 * method sends the following message to the server: ProtocolMessages.ACT +
-	 * ProtocolMessages.DELIMITER + guestName + ProtocolMessages.DELIMITER +
-	 * password
-	 * 
-	 * If nights is not an integer or not a positive number, a message is shown in
-	 * the view and no request is sent to the server.
-	 * 
-	 * When a request is sent to the server, the result (multiple lines, ending with
-	 * ProtocolMessages.EOT) is retrieved and forwarded to the view.
-	 * 
-	 * @requires guestName != null
-	 * @requires nights to be integer and > 0
-	 * @param guestName Name of the guest
-	 * @param nights    Number of nights of the stay
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doBill(String guestName, String nights) throws ServerUnavailableException;
+	public void doInformMove(String c) throws ServerUnavailableException;
 
 	/**
-	 * Requests the state of the scrabble at the server. The state contains an overview
-	 * of the rooms, its guests and the state of the safes.
-	 * 
-	 * The doPrint() method sends the following message to the server:
-	 * ProtocolMessages.PRINT
-	 * 
-	 * The result (multiple lines, ending with ProtocolMessages.EOT) is retrieved
-	 * and forwarded to the view
-	 * 
-	 * @throws ServerUnavailableException if IO errors occur.
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 * @throws ProtocolException          if the server response is invalid.
 	 */
-	public void doPrint() throws ServerUnavailableException;
+	public void doSendChat(String c) throws ServerUnavailableException;
+
 
 	/**
 	 * Sends a message to the server indicating that this client will exit:
@@ -128,6 +92,6 @@ public interface ClientProtocol {
 	 * 
 	 * @throws ServerUnavailableException if IO errors occur.
 	 */
-	public void sendExit() throws ServerUnavailableException;
+	public void sendExit(String c) throws ServerUnavailableException;
 
 }

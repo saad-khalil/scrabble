@@ -62,8 +62,7 @@ public class Server implements Runnable, ServerProtocol {
 
 				while (true) {
 					Socket sock = ssock.accept();
-					String name = "Client " 
-							+ String.format("%02d", next_client_no++);
+					String name = "Client " + String.format("%02d", next_client_no++);
 					view.showMessage("New client [" + name + "] connected!");
 					ClientHandler handler = new ClientHandler(sock, this, name);
 					new Thread(handler).start();
@@ -75,8 +74,7 @@ public class Server implements Runnable, ServerProtocol {
 				// stop the program.
 				openNewSocket = false;
 			} catch (IOException e) {
-				System.out.println("A server IO error occurred: " 
-						+ e.getMessage());
+				System.out.println("A server IO error occurred: " + e.getMessage());
 
 				if (!view.getBoolean("Do you want to open a new socket?")) {
 					openNewSocket = false;
@@ -107,31 +105,25 @@ public class Server implements Runnable, ServerProtocol {
 		while (ssock == null) {
 			int port = view.getInt("Please enter the server port.");
 
-			// try to open a new ServerSocket
+			// try to opening a new ServerSocket
 			try {
-				view.showMessage("Attempting to open a socket at 127.0.0.1 "
-						+ "on port " + port + "...");
-				ssock = new ServerSocket(port, 0, 
-						InetAddress.getByName("127.0.0.1"));
+				view.showMessage("Attempting to open a socket at 127.0.0.1 on port " + port + "...");
+				ssock = new ServerSocket(port, 0, InetAddress.getByName("127.0.0.1"));
 				view.showMessage("Server started at port " + port);
 			} catch (IOException e) {
-				view.showMessage("ERROR: could not create a socket on "
-						+ "127.0.0.1" + " and port " + port + ".");
+				view.showMessage("ERROR: could not create a socket on 127.0.0.1 and port " + port + ".");
 
 				if (!view.getBoolean("Do you want to try again?")) {
-					throw new ExitProgram("User indicated to exit the "
-							+ "program.");
+					throw new ExitProgram("User indicated to exit the program.");
 				}
 			}
 		}
 	}
-	
-	/**
-	 * Asks the user for a scrabble name and initializes
-	 * a new Scrabble with this name.
-	 */
+
+	// initializes Scrabble
 	public void setupScrabble() {
 		// To be implemented.
+		gameController = new GameController();
 	}
 	
 	/**
@@ -145,40 +137,58 @@ public class Server implements Runnable, ServerProtocol {
 
 	// ------------------ Server Methods --------------------------
 
+
 	@Override
-	public String getHello() {
-		// To be implemented
-	}
-	
-	@Override
-	public synchronized String doIn(String cmd) {
-		// To be implemented
+	public String doRequestGame(int numPlayers) {
+		gameController.requestGame(numPlayers);
+		return "";
 	}
 
 	@Override
-	public synchronized String doOut(String cmd) {
-		// To be implemented
+	public String doStartGame(String c) {
+
+		return c;
 	}
 
 	@Override
-	public synchronized String doRoom(String cmd) {
-		// To be implemented
+	public String doAnnounce(String c) {
+
+		return c;
+	}
+
+
+	@Override
+	public String doMakeMove(String c) {
+
+		return c;
 	}
 
 	@Override
-	public synchronized String doAct(String cmd1, String cmd2) {
-		// To be implemented
+	public String doNotifyChat(String c) {
+
+		return c;
 	}
 
 	@Override
-	public synchronized String doBill(String cmd1, String cmd2) {
-		// To be implemented
+	public String doNewTiles(String c) {
+
+		return c;
 	}
 
 	@Override
-	public synchronized String doPrint() {
-		// To be implemented
+	public String doPlayerDisconnected(String c) {
+
+		return c;
 	}
+
+	@Override
+	public String doGameOver() {
+
+		return "GAMEOVER?";
+	}
+
+
+
 
 	// ------------------ Main --------------------------
 

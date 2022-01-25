@@ -5,7 +5,6 @@ public class Slot {
     private final String premiumType;
     private Tile tile = null;
 
-    
     public Slot(String premiumType) { this.premiumType = premiumType; }
 
     public static boolean isValid(int r, int c) { return c >= 0 && c < Board.N && r >= 0 && r < Board.N; }

@@ -7,12 +7,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Objects;
 
 import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.exceptions.ProtocolException;
 import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.ClientProtocol;
-import nl.saad.scrabble.protocol.ProtocolMessages;
+import nl.saad.scrabble.protocol.Protocol;
+import nl.saad.scrabble.server.view.ServerTUI;
 
 
 public class Client implements ClientProtocol {
@@ -20,12 +23,21 @@ public class Client implements ClientProtocol {
 	private Socket serverSock;
 	private BufferedReader in;
 	private BufferedWriter out;
+	private ClientTUI view;
 
 	/**
 	 * Constructs a new ScrabbleClient. Initialises the view.
 	 */
 	public Client() {
-		// To be implemented
+		view = new ClientTUI();
+		try {
+            createConnection();
+            handleAnnounce();
+			start();
+        } catch (ExitProgram | ServerUnavailableException | ProtocolException e) {
+            System.out.println("Error occurred");
+        }
+        view.showMessage("Do you want a new connection ? y/n");
 	}
 
 	/**
@@ -37,8 +49,57 @@ public class Client implements ClientProtocol {
 	 * When errors occur, or when the user terminates a server connection, the
 	 * user is asked whether a new connection should be made.
 	 */
-	public void start() {
+	public void start() throws ExitProgram, ServerUnavailableException {
 		// To be implemented
+		view.showMessage("Enter command: ");
+		String userCommand = view.getCommand();
+		while (!Objects.equals(userCommand, "EXIT")) {
+			handleUserInput(userCommand);
+		}
+	}
+
+	/**
+	 * Split the user input on a space and handle it accordingly.
+	 * - If the input is valid, take the corresponding action (for example,
+	 *   when "i Name" is called, send a checkIn request for Name)
+	 * - If the input is invalid, show a message to the user and print the help menu.
+	 *
+	 * @param input The user input.
+	 * @throws ExitProgram               	When the user has indicated to exit the
+	 *                                    	program.
+	 * @throws ServerUnavailableException 	if an IO error occurs in taking the
+	 *                                    	corresponding actions.
+	 */
+	public void handleUserInput(String command) throws ExitProgram, ServerUnavailableException {
+		String[] args = command.split(" ");
+		String type = args[0];
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(type);
+
+		if (args.length >= 2) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[1]);
+		}
+
+		if (args.length == 3) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[2]);
+		}
+		sb.append(Protocol.MESSAGE_SEPARATOR);
+
+		String formattedCommand = sb.toString();
+
+		switch (type) { // action
+			case "REQUESTGAME":
+				doRequestGame(formattedCommand);
+			case "SENDCHAT":
+				doSendChat(formattedCommand);
+			case "MAKEMOVE":
+				doInformMove(formattedCommand);
+			case "EXIT":
+				sendExit(formattedCommand);
+			default:
+				view.showMessage("Invalid command.");
+		}
 	}
 
 	/**
@@ -74,9 +135,9 @@ public class Client implements ClientProtocol {
 					+ host + " and port " + port + ".");
 
 				//Do you want to try again? (ask user, to be implemented)
-				if(false) {
-					throw new ExitProgram("User indicated to exit.");
-				}
+//				if(false) {
+//					throw new ExitProgram("User indicated to exit.");
+//				}
 			}
 		}
 	}
@@ -109,12 +170,10 @@ public class Client implements ClientProtocol {
 				out.flush();
 			} catch (IOException e) {
 				System.out.println(e.getMessage());
-				throw new ServerUnavailableException("Could not write "
-						+ "to server.");
+				throw new ServerUnavailableException("Could not write to server.");
 			}
 		} else {
-			throw new ServerUnavailableException("Could not write "
-					+ "to server.");
+			throw new ServerUnavailableException("Could not write to server.");
 		}
 	}
 
@@ -124,24 +183,20 @@ public class Client implements ClientProtocol {
 	 * @return the line sent by the server.
 	 * @throws ServerUnavailableException if IO errors occur.
 	 */
-	public String readLineFromServer() 
-			throws ServerUnavailableException {
+	public String readLineFromServer() throws ServerUnavailableException {
 		if (in != null) {
 			try {
 				// Read and return answer from Server
 				String answer = in.readLine();
 				if (answer == null) {
-					throw new ServerUnavailableException("Could not read "
-							+ "from server.");
+					throw new ServerUnavailableException("Could not read from server.");
 				}
 				return answer;
 			} catch (IOException e) {
-				throw new ServerUnavailableException("Could not read "
-						+ "from server.");
+				throw new ServerUnavailableException("Could not read from server.");
 			}
 		} else {
-			throw new ServerUnavailableException("Could not read "
-					+ "from server.");
+			throw new ServerUnavailableException("Could not read from server.");
 		}
 	}
 
@@ -152,15 +207,13 @@ public class Client implements ClientProtocol {
 	 * @return the concatenated lines sent by the server.
 	 * @throws ServerUnavailableException if IO errors occur.
 	 */
-	public String readMultipleLinesFromServer() 
-			throws ServerUnavailableException {
+	public String readMultipleLinesFromServer() throws ServerUnavailableException {
 		if (in != null) {
 			try {
 				// Read and return answer from Server
 				StringBuilder sb = new StringBuilder();
-				for (String line = in.readLine(); line != null
-						&& !line.equals(ProtocolMessages.EOT); 
-						line = in.readLine()) {
+				for (String line = in.readLine(); line != null && !line.equals(Protocol.MESSAGE_SEPARATOR);
+					 line = in.readLine()) {
 					sb.append(line + System.lineSeparator());
 				}
 				return sb.toString();
@@ -186,48 +239,55 @@ public class Client implements ClientProtocol {
 			e.printStackTrace();
 		}
 	}
-	
+
 	@Override
-	public void handleHello() 
-			throws ServerUnavailableException, ProtocolException {
-		// To be implemented
-	}
-	
-	@Override
-	public void doIn(String guestName) throws ServerUnavailableException {
-		// To be implemented
+	public void handleAnnounce() throws ServerUnavailableException, ProtocolException {
+		String msg = readLineFromServer();
+		view.showMessage("[SERVER]: " + msg);
 	}
 
 	@Override
-	public void doOut(String guestName) throws ServerUnavailableException {
-		// To be implemented
+	public void handleInformQueue() throws ServerUnavailableException, ProtocolException {
+//		sendMessage(String.valueOf(ProtocolMessages.HELLO));
+//		if (readLineFromServer().contains(String.valueOf(ProtocolMessages.HELLO))) {
+//			System.out.println("Welcome to the Hotel booking system of hotel! Press 'h' for help menu: ");
+//		} else {
+//			throw new ProtocolException("Can't do the handshake");
+//		}
+		String msg = readLineFromServer();
 	}
 
 	@Override
-	public void doRoom(String guestName) throws ServerUnavailableException {
-		// To be implemented
+	public void handleNotifyTurn() throws ServerUnavailableException, ProtocolException {
+		String msg = readLineFromServer();
 	}
 
 	@Override
-	public void doAct(String guestName, String password) 
-			throws ServerUnavailableException {
-		// To be implemented
+	public void handleNewTiles() throws ServerUnavailableException, ProtocolException {
+		String msg = readLineFromServer();
+		view.printBoard(msg);
 	}
 
 	@Override
-	public void doBill(String guestName, String nights) 
-			throws ServerUnavailableException {
-		// To be implemented
+	public void doRequestGame(String c) throws ServerUnavailableException {
+		sendMessage(c);
 	}
 
 	@Override
-	public void doPrint() throws ServerUnavailableException {
-		// To be implemented
+	public void doInformMove(String c) throws ServerUnavailableException {
+		sendMessage(c);
 	}
 
 	@Override
-	public void sendExit() throws ServerUnavailableException {
-		// To be implemented
+	public void doSendChat(String c) throws ServerUnavailableException {
+		sendMessage(c);
+	}
+
+
+	@Override
+	public void sendExit(String c) throws ServerUnavailableException {
+		sendMessage(c);
+		closeConnection();
 	}
 
 	/**
@@ -235,7 +295,7 @@ public class Client implements ClientProtocol {
 	 * 
 	 * @param args 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ExitProgram, ServerUnavailableException {
 		(new Client()).start();
 	}
 

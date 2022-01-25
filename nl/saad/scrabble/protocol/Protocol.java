@@ -17,7 +17,8 @@ public class Protocol {
         INFORMMOVE,
         ERROR,
         GAMEOVER,
-        PLAYERDISCONNECTED
+        PLAYERDISCONNECTED,
+        EXIT
     }
 
     public enum ChatCommand implements Command {
