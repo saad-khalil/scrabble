@@ -56,32 +56,6 @@ public class Board {
         return true;
     }
 
-    public void placeWord(Word word, Hand hand) throws Exception {
-        if (!isValidPlacement(word, hand)) {
-            throw new Exception("Invalid word placement");
-        }
-        int r, c;
-        for (int i = 0; i < word.getLength(); i++) {
-            char ch = word.charAt(i);
-            if (word.getDirection() == 'H') { // Column index increases for word placed horizontally
-                c = word.getCol() + i;
-                r = word.getRow();
-            } else { // Row index increases for word placed vertically
-                r = word.getRow() + i;
-                c = word.getCol();
-            } // Ignore filled Slots, place tiles on the remaining Slots
-            if (board[r][c].isEmpty()) {
-                if (hand.hasLetter(ch)) { // Place tile on the board and remove it from the hand
-                    placeTile(r, c, hand.getTile(ch));
-                    hand.removeTile(ch);
-                } else { // Convert blank tile to a given letter if letter is not in the hand
-                    Tile blankTile = new Tile(ch, 0);
-                    placeTile(r, c, blankTile);
-                    hand.removeTile('!');
-                }
-            }
-        }
-    }
 
     public boolean isValidPlacement(Word word, Hand hand) {
         int r = word.getRow();

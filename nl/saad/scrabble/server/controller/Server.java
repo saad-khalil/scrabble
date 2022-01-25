@@ -1,16 +1,20 @@
 package nl.saad.scrabble.server.controller;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.protocol.ServerProtocol;
 import nl.saad.scrabble.server.view.ServerTUI;
+
+import static java.lang.Integer.parseInt;
 
 /**
  * Server TUI for Networked Scrabble Application
@@ -43,7 +47,7 @@ public class Server implements Runnable, ServerProtocol {
 	public Server() {
 		clients = new ArrayList<>();
 		view = new ServerTUI();
-		next_client_no = 1;
+		next_client_no = 0;
 		ssock = null;
 	}
 
@@ -64,13 +68,14 @@ public class Server implements Runnable, ServerProtocol {
 
 				while (true) {
 					Socket sock = ssock.accept();
-					String name = "Client " + String.format("%02d", next_client_no++);
-					view.showMessage("New client [" + name + "] connected!");
-					ClientHandler handler = new ClientHandler(sock, this, name);
+					String idName = "Client " + String.format("%02d", (next_client_no+1));
+					view.showMessage("New client [" + idName + "] connected!");
+					ClientHandler handler = new ClientHandler(sock, this, null, next_client_no);
 					new Thread(handler).start();
 					clients.add(handler);
-					doInformQueue("New client [" + name + "] connected!");
-					doNewTiles("");
+					doInformConnect("New client [" + idName + "] connected!");
+					gameController.addPlayerToOrder(next_client_no); // add client idx to player order
+					next_client_no++;
 				}
 
 			} catch (ExitProgram e1) {
@@ -107,7 +112,7 @@ public class Server implements Runnable, ServerProtocol {
 
 		ssock = null;
 		while (ssock == null) {
-			int port = view.getInt("Please enter the server port.");
+			int port = 4000; // view.getInt("Please enter the server port:");
 
 			// try to opening a new ServerSocket
 			try {
@@ -129,7 +134,7 @@ public class Server implements Runnable, ServerProtocol {
 		// To be implemented.
 		gameController = new GameController();
 	}
-	
+
 	/**
 	 * Removes a clientHandler from the client list.
 	 * @requires client != null
@@ -141,74 +146,182 @@ public class Server implements Runnable, ServerProtocol {
 
 	// ------------------ Server Methods --------------------------
 
-
-	@Override
-	public String doRequestGame(int numPlayers) {
-		gameController.requestGame(numPlayers);
-		return "";
-	}
-
-	@Override
-	public String doStartGame(String c) {
-		doAnnounce("STARTGAME","Starting the game...");
-		return c;
-	}
-
-	@Override
-	public String doAnnounce(String protocol, String c) {
-		for (int i = 0; i < clients.size(); i++) { // broadcast
-			clients.get(i).sendMessage(protocol + Protocol.UNIT_SEPARATOR + c + Protocol.MESSAGE_SEPARATOR);
+	public boolean isNameUnique(String name) {
+		for (ClientHandler client : clients) {
+			if (Objects.equals(client.getName(), name)) {
+				return false;
+			}
 		}
-		return c;
+		return true;
+	}
+
+	@Override
+	public void doInformConnect(String recentConnect) {
+		String msg = "Current Clients: " + clients.size() + ". " + recentConnect;
+		for (ClientHandler client : clients) { // broadcast
+			client.sendMessage("INFORMCONNECT" + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
+		}
+	}
+
+	@Override
+	public String doBroadcast(String protocol, String msg) {
+		for (ClientHandler client : clients) { // broadcast
+			client.sendMessage(protocol + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
+		}
+		return msg;
 	}
 
 	@Override
 	public String doInformMove(String move) {
-		doAnnounce("INFORMMOVE", move);
+		doBroadcast("INFORMMOVE", move);
 		return move;
 	}
 
 
 	@Override
-	public String doMakeMove(String move) {
-//		gameController.makeMove()
-		return move;
-	}
-
-	@Override
-	public String doNotifyChat(String c) {
-		doAnnounce("NOTIFYCHAT", c);
-		return c;
-	}
-
-	@Override
-	public String doInformQueue(String x) {
-		String c = "Current Clients: " + clients.size();
-		for (int i = 0; i < clients.size(); i++) { // broadcast
-			clients.get(i).sendMessage("INFORMQUEUE" + Protocol.UNIT_SEPARATOR + x + Protocol.MESSAGE_SEPARATOR);
-			clients.get(i).sendMessage("INFORMQUEUE" + Protocol.UNIT_SEPARATOR + c + Protocol.MESSAGE_SEPARATOR);
+	public String doMoveWord(int clientID, String colRow, String direction, String letters) {
+		if (gameController.getTurnPlayerID() != clientID) {
+			return "Not your turn";
 		}
-		return c;
+
+		int r = parseInt(colRow.substring(1));
+		int c = colRow.charAt(0) - 'A';
+		char dir = direction.toUpperCase().charAt(0);
+
+		return gameController.makeMoveWord(clientID, r, c, dir, letters);
+	}
+
+	public String doMoveSwap(int clientID, String letters) {
+		if (gameController.getTurnPlayerID() != clientID) { // not your turn
+			return "Not your turn.";
+		}
+
+		return gameController.makeMoveSwap(clientID, letters);
 	}
 
 	@Override
-	public String doNewTiles(String c) {
-		doAnnounce("NEWTILES",  gameController.getTextBoard());
-		return c;
+	public synchronized void doNotifyChat(String name, String msg) {
+		for (ClientHandler client : clients) { // broadcast
+			if (client.canChat()) { // filter messages to those who support chatting
+				client.sendMessage("NOTIFYCHAT" + Protocol.UNIT_SEPARATOR + "("+name + "):" +  Protocol.UNIT_SEPARATOR + "\"" + msg + "\"" + Protocol.MESSAGE_SEPARATOR);
+			}
+		}
+	}
+
+
+	public void doNotifyTurn() {
+		int turnPlayerID = gameController.getTurnPlayerID();
+
+		for (ClientHandler client : clients) {
+			if (client.isReady()) {
+				boolean isTurn = client.getClientID() == turnPlayerID;
+				client.sendMessage("NOTIFYTURN" + Protocol.UNIT_SEPARATOR +  (isTurn ? '1' : '0') + Protocol.UNIT_SEPARATOR + client.getName() +  Protocol.MESSAGE_SEPARATOR);
+			}
+		}
+	}
+
+
+	public String doWelcome(String name, boolean canChat) {
+		String welcomeMsg = "WELCOME" + Protocol.UNIT_SEPARATOR + name;
+		if (canChat) {
+			welcomeMsg +=  Protocol.UNIT_SEPARATOR + "CHAT";
+		}
+		welcomeMsg += Protocol.MESSAGE_SEPARATOR;
+		return  welcomeMsg;
+	}
+
+	public boolean allPlayersReady() {
+		for (ClientHandler client : clients) {
+			if (!client.isReady()) {
+				return  false;
+			}
+		}
+		return true;
+	}
+
+	public int getCountReady() {
+		int countReady = 0;
+		for (ClientHandler client : clients) {
+			if (client.isReady()) {
+				countReady++;
+			}
+		}
+		return  countReady;
+	}
+
+	public void startGame() { // start game after announcing
+		gameController.startGame();
+		view.showMessage("Game started!");
+		doSendBoard();
+		doNotifyTurn(); // first turn
+
+	}
+
+	@Override
+	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
+		int countReady = getCountReady();
+		if (countReady >= 1 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+			return false;
+		}
+
+		ArrayList<Integer> playerOrder = gameController.getPlayerOrder();
+
+		gameController.setNumPlayers(requestedNumPlayers);
+
+		for (ClientHandler client : clients) {
+			if (playerOrder.contains(client.getClientID())) {
+				client.sendMessage("INFORMQUEUE" + Protocol.UNIT_SEPARATOR + String.valueOf(countReady) + Protocol.UNIT_SEPARATOR + requestedNumPlayers + Protocol.MESSAGE_SEPARATOR);
+			}
+		}
+
+
+		if (countReady >= requestedNumPlayers) {
+
+			StringBuilder sb = new StringBuilder();
+			int i = 0;
+			for (int pi : playerOrder) {
+				for (ClientHandler client : clients) {
+					if (client.getClientID() == pi) {
+						sb.append(client.getName());
+					}
+				}
+				if (i != playerOrder.size() - 1) {
+					sb.append(Protocol.UNIT_SEPARATOR);
+				}
+				i++;
+			}
+			String orderedPlayerNames = sb.toString();
+			doBroadcast("STARTGAME", orderedPlayerNames);
+			startGame();
+		}
+
+
+		return true;
+	}
+
+	@Override
+	public void doSendBoard() {
+		doBroadcast("SENDBOARD",  gameController.getTextBoard());
 	}
 
 	@Override
 	public String doPlayerDisconnected(String p) {
-		doAnnounce("PLAYERDISCONNECTED",  p);
+		doBroadcast("PLAYERDISCONNECTED",  p);
 		return p;
 	}
 
 	@Override
 	public String doGameOver() {
-		doAnnounce("GAMEOVER", "GAMEOVER");
+		doBroadcast("GAMEOVER", "GAMEOVER");
 		return "GAMEOVER";
 	}
 
+	public synchronized void doDisconnect(int clientID) {
+		gameController.removePlayerFromOrder(clientID);
+		int np = gameController.getNumPlayers();
+		doBroadcast("INFORMCONNECT", "Player " + (clientID+1) + " disconnected.");
+		doBroadcast("INFORMQUEUE", String.valueOf(getCountReady()) + Protocol.UNIT_SEPARATOR + np);
+	}
 
 
 

@@ -15,7 +15,8 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doMakeMove(String c);
+	public String doMoveWord(int clientID, String colRow, String direction, String letters);
+
 
 	/**
 	 *
@@ -24,7 +25,7 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doNotifyChat(String c);
+	public String doMoveSwap(int clientID, String letters);
 
 	/**
 	 *
@@ -33,7 +34,24 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doInformQueue (String c);
+	public void doNotifyChat(String name, String msg);
+
+	/**
+	 *
+	 *
+	 * @requires
+	 * @param
+	 * @return
+	 */
+	public String doWelcome(String name, boolean canChat);
+
+	/**
+	 *
+	 *
+	 * @requires
+	 * @param
+	 */
+	public boolean doInformQueue (int playerIdx, int numPlayers);
 
 	public String doInformMove (String c);
 
@@ -44,7 +62,7 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doNewTiles(String c);
+	public void doSendBoard();
 
 	/**
 	 *
@@ -71,7 +89,7 @@ public interface ServerProtocol {
 	 * @param protocol (name)
 	 * @return
 	 */
-	public String doAnnounce(String protocol, String c);
+	public String doBroadcast(String protocol, String c);
 
 	/**
 	 *
@@ -80,15 +98,6 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doStartGame(String c);
-
-	/**
-	 *
-	 *
-	 * @requires
-	 * @param
-	 * @return
-	 */
-	public String doRequestGame(int numPlayers);
+	public void doInformConnect(String recentConnect);
 
 }

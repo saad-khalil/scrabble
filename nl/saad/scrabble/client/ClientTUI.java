@@ -57,7 +57,9 @@ public class ClientTUI implements ClientView {
 				""");
 	}
 
-	public String getCommand() { return scan.nextLine(); }
+	public String getCommand() {
+		return scan.nextLine();
+	}
 
 	public void printBoard(String textBoard) { // text String board to ANSI
 		int N = 15;

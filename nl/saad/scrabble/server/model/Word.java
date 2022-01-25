@@ -10,21 +10,12 @@ public class Word {
     private final char direction;
 
     
-    public Word(String letters, char col, int row, char direction) {
+    public Word(int r, int c, char direction, String letters) {
         this.letters = letters.toUpperCase().trim();
         this.length = letters.length();
-        this.row = row;
-        this.col = col;
+        this.row = r;
+        this.col = c;
         this.direction = Character.toUpperCase(direction);
-    }
-
-    public static Word parseMove(String move) {
-        String[] moveArgs = move.split(String.valueOf(Protocol.UNIT_SEPARATOR));
-        char col = moveArgs[0].charAt(0);
-        int row = Integer.parseInt(moveArgs[0].substring(1));
-        char direction = moveArgs[1].charAt(0);
-        String letters = moveArgs[2];
-        return new Word(letters, col, row, direction);
     }
     
     public String getLetters() { return letters; }

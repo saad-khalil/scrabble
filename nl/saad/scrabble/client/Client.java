@@ -6,188 +6,90 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Objects;
 
 import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.exceptions.ProtocolException;
 import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.ClientProtocol;
 import nl.saad.scrabble.protocol.Protocol;
-import nl.saad.scrabble.server.view.ServerTUI;
+import nl.saad.scrabble.server.view.utils.ANSI;
 
+class Reciever implements  Runnable {
 
-public class Client implements ClientProtocol {
-	
-	private Socket serverSock;
-	private BufferedReader in;
-	private BufferedWriter out;
 	private ClientTUI view;
+	private BufferedReader in;
 
-	/**
-	 * Constructs a new ScrabbleClient. Initialises the view.
-	 */
-	public Client() {
+	public Reciever(BufferedReader i) {
+		this.in = i;
 		view = new ClientTUI();
+	}
+
+	void setIn(BufferedReader i) { this.in = i; }
+
+	BufferedReader getIn() { return this.in; }
+
+	public void run() {
+		String msg;
+		view.showMessage("Running");
 		try {
-            createConnection();
-            handleAnnounce();
-			start();
-        } catch (ExitProgram | ServerUnavailableException | ProtocolException e) {
-            System.out.println("Error occurred");
-        }
-        view.showMessage("Do you want a new connection ? y/n");
-	}
-
-	/**
-	 * Starts a new ScrabbleClient by creating a connection, followed by the 
-	 * HELLO handshake as defined in the protocol. After a successful 
-	 * connection and handshake, the view is started. The view asks for 
-	 * used input and handles all further calls to methods of this class. 
-	 * 
-	 * When errors occur, or when the user terminates a server connection, the
-	 * user is asked whether a new connection should be made.
-	 */
-	public void start() throws ExitProgram, ServerUnavailableException, ProtocolException {
-		// To be implemented
-		handleAnnounce();
-		view.showMessage("Enter command: ");
-		String userCommand = view.getCommand();
-		while (!Objects.equals(userCommand, "EXIT")) {
-			handleAnnounce();
-			if (!Objects.equals(userCommand, "")) {
-				handleUserInput(userCommand);
+			msg = readLineFromServer();
+			while (msg != null) {
+//				view.showMessage("> Incoming: " + msg);
+				handleCommand(msg);
+				msg = readLineFromServer();
 			}
-			userCommand = view.getCommand();
-
+			System.exit(1);
+		} catch (Exception e) {
+			System.exit(1);
 		}
 	}
 
-	/**
-	 * Split the user input on a space and handle it accordingly.
-	 * - If the input is valid, take the corresponding action (for example,
-	 *   when "i Name" is called, send a checkIn request for Name)
-	 * - If the input is invalid, show a message to the user and print the help menu.
-	 *
-	 * @param command The user input.
-	 * @throws ExitProgram               	When the user has indicated to exit the
-	 *                                    	program.
-	 * @throws ServerUnavailableException 	if an IO error occurs in taking the
-	 *                                    	corresponding actions.
-	 */
-	public void handleUserInput(String command) throws ExitProgram, ServerUnavailableException {
-		String[] args = command.split(" ");
+
+	void handleCommand(String msg) {
+		msg = msg.replace(String.valueOf(Protocol.MESSAGE_SEPARATOR), ""); // remove terminator
+		String[] args = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
 		String type = args[0];
-
-		StringBuilder sb = new StringBuilder();
-		sb.append(type);
-
-		if (args.length >= 2) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[1]);
+		if (args.length == 1) {
+			view.showMessage("Command does not follow protocol: " + msg);
+			return;
 		}
 
-		if (args.length == 3) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[2]);
+		StringBuilder sb = new StringBuilder(args[1]);
+		for (int i = 2; i < args.length; i++) {
+			sb.append(" ").append(args[i]);
 		}
-		sb.append(Protocol.MESSAGE_SEPARATOR);
+		String content = sb.toString();
 
-		String formattedCommand = sb.toString();
-
-		switch (type) { // action
-			case "REQUESTGAME":
-				doRequestGame(formattedCommand);
-			case "SENDCHAT":
-				doSendChat(formattedCommand);
-			case "MAKEMOVE":
-				doMakeMove(formattedCommand);
-			case "EXIT":
-				sendExit(formattedCommand);
+		switch(type) {
+			case "SERVER":
+			case "NOTIFYTURN":
+			case "NOTIFYCHAT":
+			case "PLAYERDISCONNECTED":
+			case "GAMEOVER":
+			case "INFORMMOVE":
+			case "INFORMCONNECT":
+			case "INFORMQUEUE":
+			case "STARTGAME":
+			case "WELCOME":
+				view.showMessage("["+type+"]: " + content);
+				break;
+			case "ERROR":
+				view.showMessage(ANSI.RED+"["+type+"]: " + content+ ANSI.RESET);
+				break;
+			case "SENDBOARD":
+				view.printBoard(content.toString());
+				break;
 			default:
-				view.showMessage("Invalid command: " + command);
+				view.showMessage("Unknown command: " + msg);
+				break;
 		}
 	}
 
-	/**
-	 * Creates a connection to the server. Requests the IP and port to 
-	 * connect to at the view (TUI).
-	 * 
-	 * The method continues to ask for an IP and port and attempts to connect 
-	 * until a connection is established or until the user indicates to exit 
-	 * the program.
-	 * 
-	 * @throws ExitProgram if a connection is not established and the user 
-	 * 				       indicates to want to exit the program.
-	 * @ensures serverSock contains a valid socket connection to a server
-	 */
-	public void createConnection() throws ExitProgram {
-		clearConnection();
-		while (serverSock == null) {
-			String host = "127.0.0.1";
-
-			int port = view.getInt("Please enter the server port.");
-
-			// try to open a Socket to the server
-			try {
-				InetAddress addr = InetAddress.getByName(host);
-				System.out.println("Attempting to connect to " + addr + ":" 
-					+ port + "...");
-				serverSock = new Socket(addr, port);
-				in = new BufferedReader(new InputStreamReader(
-						serverSock.getInputStream()));
-				out = new BufferedWriter(new OutputStreamWriter(
-						serverSock.getOutputStream()));
-			} catch (IOException e) {
-				System.out.println("ERROR: could not create a socket on " 
-					+ host + " and port " + port + ".");
-
-				//Do you want to try again? (ask user, to be implemented)
-//				if(false) {
-//					throw new ExitProgram("User indicated to exit.");
-//				}
-			}
-		}
-	}
-
-	/**
-	 * Resets the serverSocket and In- and OutputStreams to null.
-	 * 
-	 * Always make sure to close current connections via shutdown() 
-	 * before calling this method!
-	 */
-	public void clearConnection() {
-		serverSock = null;
-		in = null;
-		out = null;
-	}
-
-	/**
-	 * Sends a message to the connected server, followed by a new line. 
-	 * The stream is then flushed.
-	 * 
-	 * @param msg the message to write to the OutputStream.
-	 * @throws ServerUnavailableException if IO errors occur.
-	 */
-	public synchronized void sendMessage(String msg) 
-			throws ServerUnavailableException {
-		if (out != null) {
-			try {
-				out.write(msg);
-				out.newLine();
-				out.flush();
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
-				throw new ServerUnavailableException("Could not write to server.");
-			}
-		} else {
-			throw new ServerUnavailableException("Could not write to server.");
-		}
-	}
 
 	/**
 	 * Reads and returns one line from the server.
-	 * 
+	 *
 	 * @return the line sent by the server.
 	 * @throws ServerUnavailableException if IO errors occur.
 	 */
@@ -209,9 +111,9 @@ public class Client implements ClientProtocol {
 	}
 
 	/**
-	 * Reads and returns multiple lines from the server until the end of 
+	 * Reads and returns multiple lines from the server until the end of
 	 * the text is indicated using a line containing ProtocolMessages.EOT.
-	 * 
+	 *
 	 * @return the concatenated lines sent by the server.
 	 * @throws ServerUnavailableException if IO errors occur.
 	 */
@@ -232,61 +134,189 @@ public class Client implements ClientProtocol {
 			throw new ServerUnavailableException("Could not read from server.");
 		}
 	}
+}
+
+
+
+
+public class Client implements Runnable, ClientProtocol {
+
+	private Socket serverSock;
+	private BufferedWriter out;
+	private Reciever reciever;
+	private ClientTUI view;
 
 	/**
-	 * Closes the connection by closing the In- and OutputStreams, as 
+	 * Constructs a new ScrabbleClient. Initialises the view.
+	 */
+	public Client() {
+		view = new ClientTUI();
+	}
+
+	/**
+	 * Starts a new ScrabbleClient by creating a connection, followed by the
+	 * HELLO handshake as defined in the protocol. After a successful
+	 * connection and handshake, the view is started. The view asks for
+	 * used input and handles all further calls to methods of this class.
+	 *
+	 * When errors occur, or when the user terminates a server connection, the
+	 * user is asked whether a new connection should be made.
+	 */
+	public void run() {
+		try {
+			createConnection();
+			inputLoop();
+
+		} catch (ExitProgram e) {
+			view.showMessage("Error occurred: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Creates a connection to the server. Requests the IP and port to
+	 * connect to at the view (TUI).
+	 *
+	 * The method continues to ask for an IP and port and attempts to connect
+	 * until a connection is established or until the user indicates to exit
+	 * the program.
+	 *
+	 * @throws ExitProgram if a connection is not established and the user
+	 * 				       indicates to want to exit the program.
+	 * @ensures serverSock contains a valid socket connection to a server
+	 */
+	public void createConnection() throws ExitProgram {
+		clearConnection();
+		while (serverSock == null) {
+			String host = "127.0.0.1";
+
+			int port = 4000; //view.getInt("Please enter the server port:");
+
+			// try to open a Socket to the server
+			try {
+				InetAddress addr = InetAddress.getByName(host);
+				view.showMessage("Attempting to connect to " + addr + ":" + port + "...");
+				serverSock = new Socket(addr, port);
+				out = new BufferedWriter(new OutputStreamWriter(serverSock.getOutputStream()));
+
+				reciever = new Reciever(new BufferedReader(new InputStreamReader(serverSock.getInputStream())));
+				new Thread(reciever).start();
+
+			} catch (IOException e) {
+				view.showMessage("ERROR: could not create a socket on "  + host + " and port " + port + ".");
+			}
+		}
+	}
+
+	void inputLoop() {
+		try {
+			while (true) {
+				String command = view.getCommand();
+				while (!(handleUserInput(command))) {
+					command = view.getCommand();
+				}
+				if (command.equals("EXIT")) {
+					break;
+				}
+			}
+		}
+		catch (Exception e) {
+			view.showMessage(e.getMessage());
+		}
+	}
+
+	/**
+	 * Resets the serverSocket and In- and OutputStreams to null.
+	 *
+	 * Always make sure to close current connections via shutdown()
+	 * before calling this method!
+	 */
+	public void clearConnection() {
+		serverSock = null;
+		if (reciever != null) reciever.setIn(null);
+		out = null;
+	}
+
+
+	public boolean handleUserInput(String command) throws ExitProgram, ServerUnavailableException {
+		String[] args = command.split(" ");
+		String type = args[0];
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(type);
+
+		if (args.length >= 2) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[1]);
+		}
+
+		if (args.length == 3) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[2]);
+		}
+		sb.append(Protocol.MESSAGE_SEPARATOR);
+
+		String formattedCommand = sb.toString();
+
+		switch (type) { // action
+			case "REQUESTGAME":
+				doRequestGame(formattedCommand);
+				break;
+			case "SENDCHAT":
+				doSendChat(formattedCommand);
+				break;
+			case "MAKEMOVE":
+				doMakeMove(formattedCommand);
+				break;
+			case "EXIT":
+				sendExit(formattedCommand);
+				break;
+			case "ANNOUNCE":
+				doSendAnnounce(formattedCommand);
+				break;
+			default:
+				view.showMessage("Invalid command: " + command);
+				return false;
+		}
+
+		return true;
+	}
+
+
+	/**
+	 * Sends a message to the connected server, followed by a new line.
+	 * The stream is then flushed.
+	 *
+	 * @param msg the message to write to the OutputStream.
+	 * @throws ServerUnavailableException if IO errors occur.
+	 */
+	public synchronized void sendMessage(String msg)
+			throws ServerUnavailableException {
+		if (out != null) {
+			try {
+				out.write(msg);
+				out.newLine();
+				out.flush();
+			} catch (IOException e) {
+				view.showMessage(e.getMessage());
+				throw new ServerUnavailableException("Could not write to server.");
+			}
+		} else {
+			throw new ServerUnavailableException("Could not write to server.");
+		}
+	}
+
+
+	/**
+	 * Closes the connection by closing the In- and OutputStreams, as
 	 * well as the serverSocket.
 	 */
 	public void closeConnection() {
-		System.out.println("Closing the connection...");
+		view.showMessage("Closing the connection...");
 		try {
-			in.close();
+			reciever.getIn().close();
 			out.close();
 			serverSock.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	@Override // inform queue, inform move
-	public void handleAnnounce() throws ServerUnavailableException, ProtocolException {
-		String msg = readLineFromServer();
-		String[] args = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
-		String type = args[0];
-		String content = args[1];
-		content = content.replace(String.valueOf(Protocol.MESSAGE_SEPARATOR), ""); // remove terminator
-
-		switch(type) {
-			case "ANNOUNCE":
-			case "NOTIFYTURN":
-			case "NOTIFYCHAT":
-			case "PLAYERDISCONNECTED":
-			case "GAMEOVER":
-			case "INFORMMOVE":
-			case "INFORMQUEUE":
-				view.showMessage("["+type+"]: " + content);
-			case "NEWTILES":
-				view.printBoard(content);
-		}
-
-	}
-
-	@Override
-	public void handleNotifyTurn() throws ServerUnavailableException, ProtocolException {
-//		String msg = readLineFromServer();
-//		view.showMessage("[SERVER]: " + msg);
-	}
-
-	@Override
-	public void handleNotifyChat() throws ServerUnavailableException, ProtocolException {
-//		String msg = readLineFromServer();
-//		view.showMessage("[SERVER]: " + msg);
-	}
-
-	@Override
-	public void handleNewTiles() throws ServerUnavailableException, ProtocolException {
-//		String msg = readLineFromServer();
-//		view.printBoard(msg);
 	}
 
 	@Override
@@ -304,6 +334,11 @@ public class Client implements ClientProtocol {
 		sendMessage(c);
 	}
 
+	@Override
+	public void doSendAnnounce(String c) throws ServerUnavailableException {
+		sendMessage(c);
+	}
+
 
 	@Override
 	public void sendExit(String c) throws ServerUnavailableException {
@@ -313,11 +348,13 @@ public class Client implements ClientProtocol {
 
 	/**
 	 * This method starts a new ScrabbleClient.
-	 * 
-	 * @param args 
+	 *
+	 * @param args
 	 */
 	public static void main(String[] args) throws ExitProgram, ServerUnavailableException, ProtocolException {
-		(new Client()).start();
+		Client client = new Client();
+		System.out.println(ANSI.GREEN + "SCRABBLE CLIENT."  + ANSI.RESET);
+		new Thread(client).start();
 	}
 
 }
