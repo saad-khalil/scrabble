@@ -15,129 +15,6 @@ import nl.saad.scrabble.protocol.ClientProtocol;
 import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.server.view.utils.ANSI;
 
-class Reciever implements  Runnable {
-
-	private ClientTUI view;
-	private BufferedReader in;
-
-	public Reciever(BufferedReader i) {
-		this.in = i;
-		view = new ClientTUI();
-	}
-
-	void setIn(BufferedReader i) { this.in = i; }
-
-	BufferedReader getIn() { return this.in; }
-
-	public void run() {
-		String msg;
-		view.showMessage("Running");
-		try {
-			msg = readLineFromServer();
-			while (msg != null) {
-//				view.showMessage("> Incoming: " + msg);
-				handleCommand(msg);
-				msg = readLineFromServer();
-			}
-			System.exit(1);
-		} catch (Exception e) {
-			System.exit(1);
-		}
-	}
-
-
-	void handleCommand(String msg) {
-		msg = msg.replace(String.valueOf(Protocol.MESSAGE_SEPARATOR), ""); // remove terminator
-		String[] args = msg.split(String.valueOf(Protocol.UNIT_SEPARATOR));
-		String type = args[0];
-		if (args.length == 1) {
-			view.showMessage("Command does not follow protocol: " + msg);
-			return;
-		}
-
-		StringBuilder sb = new StringBuilder(args[1]);
-		for (int i = 2; i < args.length; i++) {
-			sb.append(" ").append(args[i]);
-		}
-		String content = sb.toString();
-
-		switch(type) {
-			case "SERVER":
-			case "NOTIFYTURN":
-			case "NOTIFYCHAT":
-			case "PLAYERDISCONNECTED":
-			case "GAMEOVER":
-			case "INFORMMOVE":
-			case "INFORMCONNECT":
-			case "INFORMQUEUE":
-			case "STARTGAME":
-			case "WELCOME":
-				view.showMessage("["+type+"]: " + content);
-				break;
-			case "ERROR":
-				view.showMessage(ANSI.RED+"["+type+"]: " + content+ ANSI.RESET);
-				break;
-			case "SENDBOARD":
-				view.printBoard(content.toString());
-				break;
-			default:
-				view.showMessage("Unknown command: " + msg);
-				break;
-		}
-	}
-
-
-	/**
-	 * Reads and returns one line from the server.
-	 *
-	 * @return the line sent by the server.
-	 * @throws ServerUnavailableException if IO errors occur.
-	 */
-	public String readLineFromServer() throws ServerUnavailableException {
-		if (in != null) {
-			try {
-				// Read and return answer from Server
-				String answer = in.readLine();
-				if (answer == null) {
-					throw new ServerUnavailableException("Could not read from server.");
-				}
-				return answer;
-			} catch (IOException e) {
-				throw new ServerUnavailableException("Could not read from server.");
-			}
-		} else {
-			throw new ServerUnavailableException("Could not read from server.");
-		}
-	}
-
-	/**
-	 * Reads and returns multiple lines from the server until the end of
-	 * the text is indicated using a line containing ProtocolMessages.EOT.
-	 *
-	 * @return the concatenated lines sent by the server.
-	 * @throws ServerUnavailableException if IO errors occur.
-	 */
-	public String readMultipleLinesFromServer() throws ServerUnavailableException {
-		if (in != null) {
-			try {
-				// Read and return answer from Server
-				StringBuilder sb = new StringBuilder();
-				for (String line = in.readLine(); line != null && !line.equals(Protocol.MESSAGE_SEPARATOR);
-					 line = in.readLine()) {
-					sb.append(line + System.lineSeparator());
-				}
-				return sb.toString();
-			} catch (IOException e) {
-				throw new ServerUnavailableException("Could not read from server.");
-			}
-		} else {
-			throw new ServerUnavailableException("Could not read from server.");
-		}
-	}
-}
-
-
-
 
 public class Client implements Runnable, ClientProtocol {
 
@@ -198,7 +75,7 @@ public class Client implements Runnable, ClientProtocol {
 				serverSock = new Socket(addr, port);
 				out = new BufferedWriter(new OutputStreamWriter(serverSock.getOutputStream()));
 
-				reciever = new Reciever(new BufferedReader(new InputStreamReader(serverSock.getInputStream())));
+				reciever = new Reciever(serverSock);
 				new Thread(reciever).start();
 
 			} catch (IOException e) {
@@ -248,9 +125,18 @@ public class Client implements Runnable, ClientProtocol {
 			sb.append(Protocol.UNIT_SEPARATOR).append(args[1]);
 		}
 
-		if (args.length == 3) {
+		if (args.length >= 3) {
 			sb.append(Protocol.UNIT_SEPARATOR).append(args[2]);
 		}
+
+		if (args.length >= 4) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[3]);
+		}
+
+		if (args.length >= 5) {
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[4]);
+		}
+
 		sb.append(Protocol.MESSAGE_SEPARATOR);
 
 		String formattedCommand = sb.toString();
@@ -311,7 +197,7 @@ public class Client implements Runnable, ClientProtocol {
 	public void closeConnection() {
 		view.showMessage("Closing the connection...");
 		try {
-			reciever.getIn().close();
+			reciever.closeIn();
 			out.close();
 			serverSock.close();
 		} catch (IOException e) {

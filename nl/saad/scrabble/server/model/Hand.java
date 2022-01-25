@@ -25,6 +25,14 @@ public class Hand {
     
     public ArrayList<Tile> getHand() { return hand; }
 
+    public String getLetters() {
+        StringBuilder sb = new StringBuilder();
+        for (Tile t : hand) {
+            sb.append(t.getLetter());
+        }
+        return sb.toString();
+    }
+
     public void setHand(ArrayList<Tile> hand) {
         this.hand.clear();
         this.hand.addAll(hand);

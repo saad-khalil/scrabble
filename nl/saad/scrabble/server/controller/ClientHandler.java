@@ -68,7 +68,7 @@ public class ClientHandler implements Runnable {
 		try {
 			msg = in.readLine();
 			while (msg != null) {
-				System.out.println("> [" + name + "] Incoming: " + msg);
+//				System.out.println("> [" + name + "] Incoming: " + msg);
 				handleCommand(msg);
 				msg = in.readLine();
 			}
@@ -112,9 +112,10 @@ public class ClientHandler implements Runnable {
 					int numPlayers = 2;
 					if (param1 != null) {
 						numPlayers = parseInt(param1);
-					}
-					if (numPlayers < 2) {
-						sendError(Protocol.Error.E010.getDescription());
+						if (numPlayers < 2) {
+							sendError(Protocol.Error.E010.getDescription());
+							break;
+						}
 					}
 
 					ready = true;
@@ -126,10 +127,14 @@ public class ClientHandler implements Runnable {
 
 				case "MAKEMOVE":
 					String err = null;
-					if (param1 == "WORD") {
+					if (param1 == null) {
+						sendError(Protocol.Error.E003.getDescription());
+						break;
+					}
+					if (param1.equals("WORD")) {
 						err = srv.doMoveWord(clientID, param2, param3, param4);
 					}
-					else if (param1 == "SWAP") {
+					else if (param1.equals("SWAP")) {
 						err = srv.doMoveSwap(clientID,param2);
 					}
 					else {
@@ -140,6 +145,10 @@ public class ClientHandler implements Runnable {
 					if (err != null) { // got an error doing the move
 						sendError(err);
 						break;
+					}
+					else {
+						System.out.println("Valid move.");
+						srv.doNextTurn();
 					}
 					break;
 

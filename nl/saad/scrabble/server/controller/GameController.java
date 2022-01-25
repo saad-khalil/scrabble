@@ -1,5 +1,6 @@
 package nl.saad.scrabble.server.controller;
 
+import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.server.model.*;
 
 import java.lang.reflect.Array;
@@ -14,16 +15,27 @@ public class GameController { // all game helpers necessary
     private String drawnTiles;
     private int turn;
     private int numPlayers;
-    private InMemoryScrabbleWordChecker wordChecker;
+    private ScrabbleWordChecker wordChecker;
     public static final Set<String> curr_words = new HashSet<String>();
+
 
     public GameController() {
         playerOrder = new ArrayList<Integer>();
+        players = new HashMap<>();
+        wordChecker = new FileStreamScrabbleWordChecker();
     }
 
 
     public int getTurnPlayerID() {
+        if (playerOrder.isEmpty()) {
+            return -1;
+        }
+
         return playerOrder.get(turn % numPlayers);
+    }
+
+    public String getPlayerHandLetters(int pID) {
+        return players.get(pID).getHand().getLetters();
     }
 
 
@@ -68,26 +80,28 @@ public class GameController { // all game helpers necessary
     public void startGame() {
         bag = new Bag();
         board = new Board();
+        curr_words.clear();
+        drawnTiles = "";
+        turn = 0;
         for (Integer pID : playerOrder) {
             players.put(pID, new Player(new Hand(bag)));
         }
 
         board.setFirstMove(true);
-        curr_words.clear();
-        drawnTiles = "";
-        turn = 0;
     }
 
 
     public String getTextBoard() { // convert board to Text String
+        int N = Board.N;
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < Board.N; i++) {
-            for (int j = 0; j < Board.N; j++) {
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
                 sb.append(board.getSlotString(i, j));
-
-                if (j != Board.N -1) sb.append(",");
+                if (j != N-1) {
+                    sb.append(",");
+                }
             }
-            sb.append(";");
+            sb.append("%");
         }
         return sb.toString();
     }
@@ -95,6 +109,7 @@ public class GameController { // all game helpers necessary
 
 
     public String makeMoveWord(int pID, int r, int c, char direction, String letters) {
+        System.out.println(pID + r + c + direction + letters);
         Player player = players.get(pID);
         Hand hand = player.getHand();
         Word word = new Word(r, c, direction, letters);
@@ -114,6 +129,9 @@ public class GameController { // all game helpers necessary
                 drawnTiles = hand.refill();
 
                 System.out.println("Bag: " + bag.size());
+            }
+            else {
+                return "Invalid move.";
             }
         } catch (Exception e) {
             return e.getMessage();

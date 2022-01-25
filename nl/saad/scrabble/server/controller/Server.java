@@ -13,6 +13,7 @@ import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.protocol.ServerProtocol;
 import nl.saad.scrabble.server.view.ServerTUI;
+import nl.saad.scrabble.server.view.utils.ANSI;
 
 import static java.lang.Integer.parseInt;
 
@@ -164,7 +165,7 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	@Override
-	public String doBroadcast(String protocol, String msg) {
+	public synchronized String doBroadcast(String protocol, String msg) {
 		for (ClientHandler client : clients) { // broadcast
 			client.sendMessage(protocol + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
 		}
@@ -215,7 +216,10 @@ public class Server implements Runnable, ServerProtocol {
 		for (ClientHandler client : clients) {
 			if (client.isReady()) {
 				boolean isTurn = client.getClientID() == turnPlayerID;
+				String handLetters = gameController.getPlayerHandLetters(client.getClientID());
 				client.sendMessage("NOTIFYTURN" + Protocol.UNIT_SEPARATOR +  (isTurn ? '1' : '0') + Protocol.UNIT_SEPARATOR + client.getName() +  Protocol.MESSAGE_SEPARATOR);
+				client.sendMessage("YOURTILES" + Protocol.UNIT_SEPARATOR + handLetters + Protocol.MESSAGE_SEPARATOR);
+
 			}
 		}
 	}
@@ -254,13 +258,20 @@ public class Server implements Runnable, ServerProtocol {
 		view.showMessage("Game started!");
 		doSendBoard();
 		doNotifyTurn(); // first turn
-
 	}
+
+	public void doNextTurn() {
+		// newtiles
+		gameController.nextTurn();
+		doSendBoard();
+		doNotifyTurn();
+	}
+
 
 	@Override
 	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
 		int countReady = getCountReady();
-		if (countReady >= 1 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
 			return false;
 		}
 
@@ -300,8 +311,9 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	@Override
-	public void doSendBoard() {
-		doBroadcast("SENDBOARD",  gameController.getTextBoard());
+	public synchronized void doSendBoard() {
+		String textBoard = gameController.getTextBoard();
+		doBroadcast("SENDBOARD",  textBoard);
 	}
 
 	@Override

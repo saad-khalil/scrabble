@@ -8,6 +8,7 @@ import nl.saad.scrabble.server.view.utils.ANSI;
 
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class ClientTUI implements ClientView {
@@ -63,11 +64,25 @@ public class ClientTUI implements ClientView {
 
 	public void printBoard(String textBoard) { // text String board to ANSI
 		int N = 15;
-		String[] rows = textBoard.split(";");
+		String[] rows = textBoard.split("%");
+		char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toUpperCase().toCharArray();
+
 		int i = 0;
-		int j = 0;
+
+		console.print("     ");
+		for (int k = 0; k < N; k++) {
+			console.print("  " + alphabet[k] + "  ");
+		}
+		console.println();
+
 		for (String row : rows) {
 			String[] rowValues = row.split(",");
+			int j = 0;
+
+			if (i < 10) {
+				console.print(" ");
+			}
+			console.print("  " + i + "  ");
 
 			for (String cell : rowValues) {
 				String bgColor = ANSI.WHITE_BACKGROUND_BRIGHT;
@@ -91,16 +106,16 @@ public class ClientTUI implements ClientView {
 					default:
 						fgColor = ANSI.WHITE;
 				}
-
+				j++;
 				cell = "  " + cell + "  ";
 
-				System.out.print( fgColor + bgColor + cell);
-				j++;
+				console.print( fgColor + bgColor + cell);
 			}
-			System.out.println(ANSI.RESET);
+			console.println(ANSI.RESET);
 			i++;
+
 		}
-		System.out.println(ANSI.RESET); // reset colors?
+		console.println(ANSI.RESET); // reset colors?
 	}
 
 }
