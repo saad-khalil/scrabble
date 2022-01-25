@@ -34,7 +34,7 @@ public class Slot {
     @Override
     public String toString() {
         if (tile == null) {
-            return premiumType;
+            return " ";
         }
         return tile.toString();
     }

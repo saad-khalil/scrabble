@@ -4,23 +4,7 @@ import nl.saad.scrabble.protocol.Protocol;
 
 public class Board {
     public static final int N = 15;
-    public static final String[][] TEXT_LAYOUT = {
-            {"3W",  " ",   " ",  "2L",   " ",   " ",   " ",   "3W",  " ",   " ",   " ",  "2L",   " ",   " ",  "3W"},
-            {" ",  "2W",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "2W",   " "},
-            {" ",   " ",  "2W",   " ",   " ",   " ",  "2L",   " ",  "2L",   " ",   " ",   " ",  "2W",   " ",   " "},
-            {"2L",  " ",   " ",  "2W",   " ",   " ",   " ",  "2L",   " ",   " ",   " ",  "2W",   " ",   " ",  "2L"},
-            {" ",   " ",   " ",   " ",  "2W",   " ",   " ",   " ",   " ",   " ",  "2W",   " ",   " ",   " ",   " "},
-            {" ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " "},
-            {" ",   " ",  "2L",   " ",   " ",   " ",  "2L",   " ",  "2L",   " ",   " ",   " ",  "2L",   " ",   " "},
-            {"3W",  " ",   " ",  "2L",   " ",   " ",   " ",   "C",   " ",   " ",   " ",  "2L",   " ",   " ",  "3W"},
-            {" ",   " ",  "2L",   " ",   " ",   " ",  "2L",   " ",  "2L",   " ",   " ",   " ",  "2L",   " ",   " "},
-            {" ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " "},
-            {" ",   " ",   " ",   " ",  "2W",   " ",   " ",   " ",   " ",   " ",  "2W",   " ",   " ",   " ",   " "},
-            {"2L",  " ",   " ",  "2W",   " ",   " ",   " ",  "2L",   " ",   " ",   " ",  "2W",   " ",   " ",  "2L"},
-            {" ",   " ",  "2W",   " ",   " ",   " ",  "2L",   " ",  "2L",   " ",   " ",   " ",  "2W",   " ",   " "},
-            {" ",  "2W",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "3L",   " ",   " ",   " ",  "2W",   " "},
-            {"3W",  " ",   " ",  "2L",   " ",   " ",   " ",   "3W",  " ",   " ",   " ",  "2L",   " ",   " ",  "3W"}
-    };
+
     boolean firstMove = true;
 
     private final Slot[][] board;
@@ -30,14 +14,16 @@ public class Board {
         // Initialise multiplier Slots on board
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
-                board[i][j] = new Slot(TEXT_LAYOUT[i][j]);  // premiumTypes = " ", "C", "2L", "3L", "2W", "3W"
+                board[i][j] = new Slot(Protocol.TEXT_LAYOUT[i][j]);  // premiumTypes = " ", "C", "2L", "3L", "2W", "3W"
             }
         }
     }
 
     public Slot[][] getBoard() { return board; }
 
-    public String getSlotString(int r, int c) { return board[r][c].toString(); }
+    public String getSlotString(int r, int c) {
+        return board[r][c].toString();
+    }
 
     public void setFirstMove(boolean fm) { firstMove = fm; }
     // place tile on given indexes (no checks)

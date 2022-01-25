@@ -64,14 +64,17 @@ public class ClientTUI implements ClientView {
 	public void printBoard(String textBoard) { // text String board to ANSI
 		int N = 15;
 		String[] rows = textBoard.split(";");
-
+		int i = 0;
+		int j = 0;
 		for (String row : rows) {
 			String[] rowValues = row.split(",");
 
 			for (String cell : rowValues) {
 				String bgColor = ANSI.WHITE_BACKGROUND_BRIGHT;
 				String fgColor = ANSI.BLACK;
-				switch (cell) {
+
+				String slotType = Protocol.TEXT_LAYOUT[i][j];
+				switch (slotType) {
 					case "C":
 					case "2W":
 						bgColor = ANSI.PURPLE_BACKGROUND;
@@ -88,12 +91,14 @@ public class ClientTUI implements ClientView {
 					default:
 						fgColor = ANSI.WHITE;
 				}
-				if (cell.length() == 1) cell = "   " + cell + "  ";
-				else cell = "  " + cell + "  ";
+
+				cell = "  " + cell + "  ";
 
 				System.out.print( fgColor + bgColor + cell);
+				j++;
 			}
 			System.out.println(ANSI.RESET);
+			i++;
 		}
 		System.out.println(ANSI.RESET); // reset colors?
 	}
