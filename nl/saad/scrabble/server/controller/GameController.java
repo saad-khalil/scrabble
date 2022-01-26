@@ -16,6 +16,8 @@ public class GameController { // all game helpers necessary
     private int turn;
     private int numPlayers;
     private ScrabbleWordChecker wordChecker;
+    private String turnMove;
+    private int turnScore;
     public static final Set<String> curr_words = new HashSet<String>();
 
 
@@ -30,6 +32,8 @@ public class GameController { // all game helpers necessary
         board = new Board();
         curr_words.clear();
         drawnTiles = "";
+        turnMove = "";
+        turnScore = 0;
         turn = 0;
         for (Integer pID : playerOrder) {
             players.put(pID, new Player(new Hand(bag)));
@@ -51,6 +55,9 @@ public class GameController { // all game helpers necessary
         return players.get(pID).getHand().getLetters();
     }
 
+    public int getPlayerScore(int pID) {
+        return players.get(pID).getScore();
+    }
 
     public void nextTurn() {
         turn++;
@@ -59,6 +66,10 @@ public class GameController { // all game helpers necessary
 
 
     public String getDrawnTiles() { return drawnTiles; }
+
+    public String getTurnMove() { return turnMove; }
+
+    public int getTurnScore() { return turnScore; }
 
     public Board getBoard() { return board; }
 
@@ -111,6 +122,7 @@ public class GameController { // all game helpers necessary
 
 
     public String makeMoveWord(int pID, int r, int c, char direction, String letters) {
+        char[] alphabet = "abcdefghijklmno".toUpperCase().toCharArray();
         System.out.println(pID + " " + r + " " + c + " " + direction + " " + letters);
         Player player = players.get(pID);
         Hand hand = player.getHand();
@@ -127,17 +139,18 @@ public class GameController { // all game helpers necessary
         try {
             String err =  board.isValidPlacement(word, hand); // check if indexes and placement are valid then
 
-            if ( err == null) {
+            if ( err == null) { // SUCCESSFUL MOVE
                 board.placeWord(word, hand);
                 System.out.println("placed");
+                turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[c] + r + Protocol.UNIT_SEPARATOR + letters;
 
                 curr_words.clear();
-                int score = calculateScore(word, board);
-                player.incrementScore(score);
+                turnScore  = calculateScore(word, board);
+                player.incrementScore(turnScore );
                 System.out.println("scored");
 
                 System.out.println("Words Created: " + curr_words.toString());
-                System.out.println("Score This Turn: " + score);
+                System.out.println("Score This Turn: " + turnScore );
 
                 drawnTiles = hand.refill();
                 System.out.println("refilled");
@@ -173,6 +186,7 @@ public class GameController { // all game helpers necessary
             String newLetters = hand.swap(letters);
             System.out.println("New letters: " + newLetters);
             System.out.println("Bag: " + bag.size());
+            turnMove = "SWAP" + Protocol.UNIT_SEPARATOR + letters.length(); // tile count swapped
         }
         catch (Exception e) {
             return e.getMessage();

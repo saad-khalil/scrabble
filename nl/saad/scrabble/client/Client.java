@@ -1,9 +1,7 @@
 package nl.saad.scrabble.client;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -20,7 +18,7 @@ public class Client implements Runnable, ClientProtocol {
 
 	private Socket serverSock;
 	private BufferedWriter out;
-	private Reciever reciever;
+	private ClientReciever reciever;
 	private ClientTUI view;
 
 	/**
@@ -75,7 +73,7 @@ public class Client implements Runnable, ClientProtocol {
 				serverSock = new Socket(addr, port);
 				out = new BufferedWriter(new OutputStreamWriter(serverSock.getOutputStream()));
 
-				reciever = new Reciever(serverSock);
+				reciever = new ClientReciever(serverSock);
 				new Thread(reciever).start();
 
 			} catch (IOException e) {

@@ -9,12 +9,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 
-class Reciever implements Runnable {
+class ClientReciever implements Runnable {
 
     private ClientTUI view;
     private BufferedReader in;
 
-    public Reciever(Socket serverSock) {
+    public ClientReciever(Socket serverSock) {
         try {
             this.in = new BufferedReader(new InputStreamReader(serverSock.getInputStream()));
         } catch (Exception e) {
@@ -131,9 +131,8 @@ class Reciever implements Runnable {
             try {
                 // Read and return answer from Server
                 StringBuilder sb = new StringBuilder();
-                for (String line = in.readLine(); line != null && !line.equals(Protocol.MESSAGE_SEPARATOR);
-                     line = in.readLine()) {
-                    sb.append(line + System.lineSeparator());
+                for (String line = in.readLine(); line != null && !line.equals(String.valueOf(Protocol.MESSAGE_SEPARATOR)); line = in.readLine()) {
+                    sb.append(line).append(System.lineSeparator());
                 }
                 return sb.toString();
             } catch (IOException e) {

@@ -133,6 +133,10 @@ public class ClientHandler implements Runnable {
 						break;
 					}
 					if (param1.equals("WORD")) {
+						if (param2 == null || param3 == null || param4 == null) {
+							sendError(Protocol.Error.E003.getDescription());
+							break;
+						}
 						err = srv.doMoveWord(clientID, param2, param3, param4);
 					}
 					else if (param1.equals("SWAP")) {

@@ -185,6 +185,12 @@ public class Server implements Runnable, ServerProtocol {
 			return "Not your turn";
 		}
 
+		for (int i = 0; i < letters.length(); i++) {
+			if (letters.charAt(i) == '!') {
+				return "You cannot send a blank (!) tile. Send a letter instead of it that you need.";
+			}
+		}
+
 		int r = parseInt(colRow.substring(1));
 		int c = colRow.charAt(0) - 'A';
 		char dir = direction.toUpperCase().charAt(0);
@@ -261,15 +267,21 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	public void doNextTurn() { // after a successful move (new tiles will be drawn in case of both WORD and SWAP)
-		// send new tiles to current player
+		// send new tiles to current player (who did the turn)
 		int currentPID = gameController.getTurnPlayerID();
+		String currentMove = gameController.getTurnMove();
+		String currentName = "";
 
 		for (ClientHandler client : clients) {
 			if (client.getClientID() == currentPID) {
 				client.sendMessage("NEWTILES" + Protocol.UNIT_SEPARATOR + gameController.getDrawnTiles() + Protocol.MESSAGE_SEPARATOR);
+				currentName = client.getName();
 				break;
 			}
 		}
+
+		// inform everyone about the new move
+		doBroadcast("INFORMMOVE",currentName + Protocol.UNIT_SEPARATOR + currentMove);
 
 		gameController.nextTurn();
 		doSendBoard();

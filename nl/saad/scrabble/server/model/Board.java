@@ -31,7 +31,7 @@ public class Board {
 
     public boolean isSlotEmpty(int r, int c) { return board[r][c].isEmpty(); }
 
-    public boolean isEmpty() {
+    public boolean isBoardEmpty() {
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < N; j++) {
                 if (!board[i][j].isEmpty()) {
@@ -42,15 +42,15 @@ public class Board {
         return true;
     }
 
-    private boolean isSlotValidAndNotEmpty(int r, int c) {
+    private boolean isSlotValidOccupied(int r, int c) {
         return Slot.isValid(r, c) && !isSlotEmpty(r, c);
     }
 
     public String isValidPlacement(Word word, Hand hand) { // null when valid, error otherwise
         int r = word.getRow();
         int c = word.getCol();
-        int last_r = -1;
-        int last_c = -1;
+        int last_r;
+        int last_c;
 
         System.out.println("have required tiles?");
 
@@ -95,35 +95,27 @@ public class Board {
             }
             return null;
         }
-        else { // not first move - Checks if the current word placement would join another existing word on the board (append or overlap letter) -- required rule
+        else { // not first move - if  current word placement joins existing word on the board (append / overlap letter)
+
             r = word.getRow();
             c = word.getCol();
             int WL = word.getLength();
-            // FOR HEAD AND TAIL - check left and right of word if horizontal
-            // check top and right of word if vert
+
+            // FOR HEAD and TAIL letters
+            if (word.getDirection() == 'H' && (isSlotValidOccupied(r, c-1) || isSlotValidOccupied(r, c+WL))) return null; //LEFT, RIGHT SIDES for H
+            if (word.getDirection() == 'V' && (isSlotValidOccupied(r-1, c) || isSlotValidOccupied(r+WL, c))) return null; //ABOVE, BELOW for V
 
             // FOR THE REST OF THE WORD
             System.out.println("overlapping word?");
             for (int i = 0; i < WL; i++) { // first letter to last character
-                if ((Slot.isValid(r, c) && !isSlotEmpty(r, c))) { // overlapping existing letter slot
-                    return null;
-                }
+                if (isSlotValidOccupied(r, c)) return null; // OVERLAPPING SLOT
+                // AT LEAST ONE NEIGHBORING SLOTS MUST BE OCCUPIED IF VALID
                 if (word.getDirection() == 'H') { // HORIZONTAL
-//                    if (i == 0 && isSlotValidAndNotEmpty(r, c+1)) {
-//
-//                    }
-
-                    if ( isSlotValidAndNotEmpty(r-1, c)  // TOP
-                     ||  isSlotValidAndNotEmpty(r+1, c)){  // BOTTOM
-                        return null;
-                    }
+                    if ( isSlotValidOccupied(r-1, c) || isSlotValidOccupied(r+1, c)) return  null;  // TOP, BOTTOM
                     c++;
                 }
                 else { // VERTICAL
-                    if ( isSlotValidAndNotEmpty(r, c-1)   // LEFT
-                     || isSlotValidAndNotEmpty(r, c+1)) { // RIGHT
-                        return null;
-                    }
+                    if ( isSlotValidOccupied(r, c-1) || isSlotValidOccupied(r, c+1)) return null; // LEFT, RIGHT
                     r++;
                 }
             }
