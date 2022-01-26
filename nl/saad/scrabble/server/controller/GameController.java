@@ -39,7 +39,6 @@ public class GameController { // all game helpers necessary
     }
 
 
-
     public int getTurnPlayerID() {
         if (playerOrder.isEmpty()) {
             return -1;
@@ -58,6 +57,8 @@ public class GameController { // all game helpers necessary
         board.setFirstMove(false);
     }
 
+
+    public String getDrawnTiles() { return drawnTiles; }
 
     public Board getBoard() { return board; }
 
@@ -118,11 +119,15 @@ public class GameController { // all game helpers necessary
         System.out.println("valid word?");
 //        System.out.println(wordChecker.isValidWord(letters) != null);
         //wordChecker.isValidWord(letters) != null
-        try {
-            if (  // check word letters
-              (word.getDirection() == 'H' || word.getDirection() == 'V') // check direction
-              && board.isValidPlacement(word, hand)) {             // check if indexes and placement are valid then
+        boolean isDirectionCorrect = word.getDirection() == 'H' || word.getDirection() == 'V';
+        if (!isDirectionCorrect) {
+            return "Invalid direction character: " + direction;
+        }
 
+        try {
+            String err =  board.isValidPlacement(word, hand); // check if indexes and placement are valid then
+
+            if ( err == null) {
                 board.placeWord(word, hand);
                 System.out.println("placed");
 
@@ -141,10 +146,8 @@ public class GameController { // all game helpers necessary
                 System.out.println("Bag: " + bag.size());
             }
             else {
-                return "Invalid move.";
+                return err;
             }
-            System.out.println(board);
-
         } catch (Exception e) {
             return e.getMessage();
         }

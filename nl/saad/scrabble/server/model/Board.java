@@ -42,8 +42,11 @@ public class Board {
         return true;
     }
 
+    private boolean isSlotValidAndNotEmpty(int r, int c) {
+        return Slot.isValid(r, c) && !isSlotEmpty(r, c);
+    }
 
-    public boolean isValidPlacement(Word word, Hand hand) {
+    public String isValidPlacement(Word word, Hand hand) { // null when valid, error otherwise
         int r = word.getRow();
         int c = word.getCol();
         int last_r = -1;
@@ -53,16 +56,14 @@ public class Board {
 
         // 0. do you even have these required tiles?
         if (!hand.hasTilesFor(word.getLetters())) {
-            System.out.println(Protocol.Error.E008.getDescription());
-            return false;
+            return Protocol.Error.E008.getDescription();
         }
 
         System.out.println("valid placement slot?");
 
         // 1. check if valid slot for placement (inside board boundary)
         if (!Slot.isValid(r, c)) {
-            System.out.println(Protocol.Error.E004.getDescription()); // invalid coordinates
-            return false;
+            return Protocol.Error.E004.getDescription(); // invalid coordinates
         }
 
         // get word tail idx (last character)
@@ -79,8 +80,7 @@ public class Board {
 
         // 2. word's tail must not exceed board boundary
         if (!Slot.isValid(last_r, last_c)) {
-            System.out.println(Protocol.Error.E005.getDescription());
-            return false;
+            return Protocol.Error.E005.getDescription();
         }
 
         System.out.println("firstMove: " + firstMove);
@@ -91,35 +91,43 @@ public class Board {
             System.out.println("on center?");
 
             if (!word.coversIndex(center, center)) {
-                System.out.println(Protocol.Error.E014.getDescription());
-                return false;
+                return Protocol.Error.E014.getDescription();
             }
-            return true;
+            return null;
         }
         else { // not first move - Checks if the current word placement would join another existing word on the board (append or overlap letter) -- required rule
             r = word.getRow();
             c = word.getCol();
+            int WL = word.getLength();
+            // FOR HEAD AND TAIL - check left and right of word if horizontal
+            // check top and right of word if vert
+
+            // FOR THE REST OF THE WORD
             System.out.println("overlapping word?");
-            for (int i = 0; i < word.getLength(); i++) { // first letter to last character
+            for (int i = 0; i < WL; i++) { // first letter to last character
                 if ((Slot.isValid(r, c) && !isSlotEmpty(r, c))) { // overlapping existing letter slot
-                    return true;
+                    return null;
                 }
                 if (word.getDirection() == 'H') { // HORIZONTAL
-                    if ((Slot.isValid(r-1, c) && !isSlotEmpty(r-1, c))  // TOP
-                     || (Slot.isValid(r+1, c) && !isSlotEmpty(r+1, c))){  // BOTTOM
-                        return true;
+//                    if (i == 0 && isSlotValidAndNotEmpty(r, c+1)) {
+//
+//                    }
+
+                    if ( isSlotValidAndNotEmpty(r-1, c)  // TOP
+                     ||  isSlotValidAndNotEmpty(r+1, c)){  // BOTTOM
+                        return null;
                     }
                     c++;
                 }
                 else { // VERTICAL
-                    if ((Slot.isValid(r, c-1) && !isSlotEmpty(r, c-1))  // LEFT
-                     || (Slot.isValid(r, c+1) && !isSlotEmpty(r, c+1))) { // RIGHT
-                        return true;
+                    if ( isSlotValidAndNotEmpty(r, c-1)   // LEFT
+                     || isSlotValidAndNotEmpty(r, c+1)) { // RIGHT
+                        return null;
                     }
                     r++;
                 }
             }
-            return false;
+            return Protocol.Error.E011.getDescription();
         }
 
     }

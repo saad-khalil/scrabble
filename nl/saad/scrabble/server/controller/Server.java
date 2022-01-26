@@ -260,8 +260,17 @@ public class Server implements Runnable, ServerProtocol {
 		doNotifyTurn(); // first turn
 	}
 
-	public void doNextTurn() {
-		// newtiles
+	public void doNextTurn() { // after a successful move (new tiles will be drawn in case of both WORD and SWAP)
+		// send new tiles to current player
+		int currentPID = gameController.getTurnPlayerID();
+
+		for (ClientHandler client : clients) {
+			if (client.getClientID() == currentPID) {
+				client.sendMessage("NEWTILES" + Protocol.UNIT_SEPARATOR + gameController.getDrawnTiles() + Protocol.MESSAGE_SEPARATOR);
+				break;
+			}
+		}
+
 		gameController.nextTurn();
 		doSendBoard();
 		doNotifyTurn();
@@ -271,9 +280,10 @@ public class Server implements Runnable, ServerProtocol {
 	@Override
 	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
 		int countReady = getCountReady();
-		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
-			return false;
-		}
+		// UNCOMMENT LATER
+//		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+//			return false;
+//		}
 
 		ArrayList<Integer> playerOrder = gameController.getPlayerOrder();
 

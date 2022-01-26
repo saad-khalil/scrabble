@@ -109,13 +109,14 @@ public class ClientHandler implements Runnable {
 						sendError("You have not registered yourself.");
 						break;
 					}
-					int numPlayers = 2;
+					int numPlayers = 1;
 					if (param1 != null) {
 						numPlayers = parseInt(param1);
-						if (numPlayers < 2) {
-							sendError(Protocol.Error.E010.getDescription());
-							break;
-						}
+						// UNCOMMENT LATER
+//						if (numPlayers < 2) {
+//							sendError(Protocol.Error.E010.getDescription());
+//							break;
+//						}
 					}
 
 					ready = true;

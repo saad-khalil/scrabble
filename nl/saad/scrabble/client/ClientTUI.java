@@ -9,6 +9,7 @@ import nl.saad.scrabble.server.view.utils.ANSI;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Scanner;
 
 public class ClientTUI implements ClientView {
@@ -65,16 +66,18 @@ public class ClientTUI implements ClientView {
 	public void printBoard(String textBoard) { // text String board to ANSI
 		int N = 15;
 		String[] rows = textBoard.split("%");
-		char[] alphabet = "abcdefghijklmnopqrstuvwxyz".toUpperCase().toCharArray();
-
-		int i = 0;
+		char[] alphabet = "abcdefghijklmno".toUpperCase().toCharArray();
 
 		console.print("     ");
 		for (int k = 0; k < N; k++) {
-			console.print("  " + alphabet[k] + "  ");
+			console.print("    " + alphabet[k] + "   ");
 		}
 		console.println();
 
+		String fgColor = ANSI.BLACK;
+		String fgColorBold = ANSI.BLACK_BOLD;
+
+		int i = 0;
 		for (String row : rows) {
 			String[] rowValues = row.split(",");
 			int j = 0;
@@ -85,8 +88,7 @@ public class ClientTUI implements ClientView {
 			console.print("  " + i + "  ");
 
 			for (String cell : rowValues) {
-				String bgColor = ANSI.WHITE_BACKGROUND_BRIGHT;
-				String fgColor = ANSI.BLACK;
+				String bgColor = ANSI.WHITE_BACKGROUND; // empty
 
 				String slotType = Protocol.TEXT_LAYOUT[i][j];
 				switch (slotType) {
@@ -104,10 +106,18 @@ public class ClientTUI implements ClientView {
 						bgColor = ANSI.RED_BACKGROUND;
 						break;
 				}
-				j++;
-				cell = "  " + cell + "  ";
+				if (cell.equals(" ")) {
+					cell = "   " + alphabet[j] + i + (i < 10 ? "   " : "  ");
+					console.print(fgColor);
+				}
+				else {
+					bgColor = ANSI.YELLOW_BACKGROUND;
+					cell = "    " + cell + "   ";
+					console.print(fgColorBold);
+				}
 
-				console.print( fgColor + bgColor + cell);
+				console.print( bgColor + cell);
+				j++;
 			}
 			console.println(ANSI.RESET);
 			i++;

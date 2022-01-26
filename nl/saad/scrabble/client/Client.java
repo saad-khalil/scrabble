@@ -116,32 +116,45 @@ public class Client implements Runnable, ClientProtocol {
 
 	public boolean handleUserInput(String command) throws ExitProgram, ServerUnavailableException {
 		String[] args = command.split(" ");
-		String type = args[0];
-
+		String type = args[0].toUpperCase();
+		switch (type) { // abbrevs for testing
+			case "RG":
+				type = "REQUESTGAME";
+				break;
+			case "SC":
+				type = "SENDCHAT";
+				break;
+			case "MM":
+				type = "MAKEMOVE";
+				break;
+			case "A":
+				type = "ANNOUNCE";
+				break;
+		}
 		StringBuilder sb = new StringBuilder();
 		sb.append(type);
 
 		if (args.length >= 2) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[1]);
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[1].toUpperCase());
 		}
 
 		if (args.length >= 3) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[2]);
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[2].toUpperCase());
 		}
 
 		if (args.length >= 4) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[3]);
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[3].toUpperCase());
 		}
 
 		if (args.length >= 5) {
-			sb.append(Protocol.UNIT_SEPARATOR).append(args[4]);
+			sb.append(Protocol.UNIT_SEPARATOR).append(args[4].toUpperCase());
 		}
 
 		sb.append(Protocol.MESSAGE_SEPARATOR);
 
 		String formattedCommand = sb.toString();
 
-		switch (type) { // action
+		switch (type) {
 			case "REQUESTGAME":
 				doRequestGame(formattedCommand);
 				break;
@@ -158,7 +171,7 @@ public class Client implements Runnable, ClientProtocol {
 				doSendAnnounce(formattedCommand);
 				break;
 			default:
-				view.showMessage("Invalid command: " + command);
+				view.showMessage("Invalid command: " + formattedCommand);
 				return false;
 		}
 

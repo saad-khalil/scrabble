@@ -3,6 +3,7 @@ package nl.saad.scrabble.server.model;
 import nl.saad.scrabble.protocol.Protocol;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class Hand {
@@ -80,24 +81,32 @@ public class Hand {
         }
     }
 
-    public boolean hasTilesFor(String letters) {
-        if (letters.length() > LIMIT) { // letters cannot be more than 7
+    public boolean hasTilesFor(String reqLetters) {
+        System.out.println("Letters given: " + reqLetters);
+        System.out.println("Current player tiles: " + getLetters());
+        if (reqLetters.length() > LIMIT) { // letters cannot be more than 7
             return false;
         }
         char[] current_letters = new char[LIMIT]; // temporary hand
         for (int i = 0; i < hand.size(); i++) {
             current_letters[i] = hand.get(i).getLetter();
+            System.out.println("current_letters[i]: " + current_letters[i]);
         }
 
         // traverse letters given
-        for (int i = 0; i < letters.length(); i++) {
+        for (int i = 0; i < reqLetters.length(); i++) {
+            char reqLetter = reqLetters.charAt(i);
             boolean found = false;
+
             for (int j = 0; j < LIMIT; j++) {
-                if (current_letters[j] == letters.charAt(i)) { // found matching letter in hand
+                if (current_letters[j] == reqLetter) { // found matching required letter in hand
                     current_letters[j] = ' '; // remove from temporary hand
                     found = true;
+                    break;
                 }
             }
+
+            System.out.println("current_letters: " + Arrays.toString(current_letters));
             if (!found) { // some letter was not found == hand does not have tiles for it
                 return false;
             }

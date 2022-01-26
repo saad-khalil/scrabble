@@ -79,6 +79,7 @@ class Reciever implements Runnable {
             case "INFORMQUEUE":
             case "STARTGAME":
             case "YOURTILES":
+            case "NEWTILES":
             case "WELCOME":
                 view.showMessage("[" + type + "]: " + content);
                 break;
