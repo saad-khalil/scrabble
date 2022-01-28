@@ -8,16 +8,16 @@ public class Bag { // tiles bank of tiles for every game
     // initial quantities of each tile letter
 
     // UNCOMMENT
-//    public static final Map<Character,Integer> INIT_QUANTITIES = new HashMap<>(){{
-//        put('A',9); put('B',2); put('C',2); put('D',4);put( 'E',1); put('F',2); put('G',2); put('H',2); put('I',8); put('J',2); put('K',2); put('L',4); put('M',2);
-//        put('N',6); put('O',8); put('P',2); put('Q',1); put('R',6);  put('S',4); put('T',6); put('U',4); put('V',2); put('W',2); put('X',1); put('Y',2); put('Z',1);  put('!',2);
-//    }};
+    public static final Map<Character,Integer> INIT_QUANTITIES = new HashMap<>(){{
+        put('A',9); put('B',2); put('C',2); put('D',4);put( 'E',1); put('F',2); put('G',2); put('H',2); put('I',8); put('J',2); put('K',2); put('L',4); put('M',2);
+        put('N',6); put('O',8); put('P',2); put('Q',1); put('R',6);  put('S',4); put('T',6); put('U',4); put('V',2); put('W',2); put('X',1); put('Y',2); put('Z',1);  put('!',2);
+    }};
 
     // COMMENT
-    public static final Map<Character,Integer> INIT_QUANTITIES = new HashMap<>(){{
-        put('A',1); put('B',1); put('C',1); put('D',1);put( 'E',1); put('F',1); put('G',1); put('H',1); put('I',1); put('J',1); put('K',1); put('L',1); put('M',1);
-        put('N',1); put('O',1); put('P',1); put('Q',1); put('R',1);  put('S',1); put('T',1); put('U',1); put('V',1); put('W',1); put('X',1); put('Y',1); put('Z',1);  put('!',2);
-    }};
+//    public static final Map<Character,Integer> INIT_QUANTITIES = new HashMap<>(){{
+//        put('A',1); put('B',1); put('C',1); put('D',1);put( 'E',1); put('F',1); put('G',1); put('H',1); put('I',1); put('J',1); put('K',1); put('L',1); put('M',1);
+//        put('N',1); put('O',1); put('P',1); put('Q',1); put('R',1);  put('S',1); put('T',1); put('U',1); put('V',1); put('W',1); put('X',1); put('Y',1); put('Z',1);  put('!',2);
+//    }};
 
     // scores for every tile letter
     public static final Map<Character,Integer> SCORES = new HashMap<>(){{
