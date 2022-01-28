@@ -75,10 +75,12 @@ class ClientReciever implements Runnable {
             case "PLAYERDISCONNECTED":
             case "GAMEOVER":
             case "INFORMMOVE":
-            case "INFORMCONNECT":
+            case "PLAYERCONNECTED":
             case "INFORMQUEUE":
             case "STARTGAME":
             case "YOURTILES":
+            case "POINTSSCORED":
+            case "SCOREBOARD":
             case "NEWTILES":
             case "WELCOME":
                 view.showMessage("[" + type + "]: " + content);

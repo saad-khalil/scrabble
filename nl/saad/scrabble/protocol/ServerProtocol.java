@@ -64,14 +64,6 @@ public interface ServerProtocol {
 	 */
 	public void doSendBoard();
 
-	/**
-	 *
-	 *
-	 * @requires
-	 * @param
-	 * @return
-	 */
-	public String doPlayerDisconnected(String c);
 
 	/**
 	 *
@@ -80,7 +72,7 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public String doGameOver();
+	public void doGameOver(String gameOver);
 
 	/**
 	 *
@@ -98,6 +90,6 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public void doInformConnect(String recentConnect);
+	public void doPLAYERCONNECTED(String recentConnect);
 
 }

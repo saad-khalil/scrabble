@@ -74,7 +74,7 @@ public class Server implements Runnable, ServerProtocol {
 					ClientHandler handler = new ClientHandler(sock, this, null, next_client_no);
 					new Thread(handler).start();
 					clients.add(handler);
-					doInformConnect("New client [" + idName + "] connected!");
+					doPLAYERCONNECTED("New client [" + idName + "] connected!");
 					gameController.addPlayerToOrder(next_client_no); // add client idx to player order
 					next_client_no++;
 				}
@@ -157,10 +157,10 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	@Override
-	public void doInformConnect(String recentConnect) {
+	public void doPLAYERCONNECTED(String recentConnect) {
 		String msg = "Current Clients: " + clients.size() + ". " + recentConnect;
 		for (ClientHandler client : clients) { // broadcast
-			client.sendMessage("INFORMCONNECT" + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
+			client.sendMessage("PLAYERCONNECTED" + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
 		}
 	}
 
@@ -270,8 +270,10 @@ public class Server implements Runnable, ServerProtocol {
 		// send new tiles to current player (who did the turn)
 		int currentPID = gameController.getTurnPlayerID();
 		String currentMove = gameController.getTurnMove();
+		int currentScore = gameController.getTurnScore();
 		String currentName = "";
 
+		// SEND NEWTILES
 		for (ClientHandler client : clients) {
 			if (client.getClientID() == currentPID) {
 				client.sendMessage("NEWTILES" + Protocol.UNIT_SEPARATOR + gameController.getDrawnTiles() + Protocol.MESSAGE_SEPARATOR);
@@ -280,22 +282,49 @@ public class Server implements Runnable, ServerProtocol {
 			}
 		}
 
-		// inform everyone about the new move
+		// inform everyone about the new move, points scored and current scoreboard
 		doBroadcast("INFORMMOVE",currentName + Protocol.UNIT_SEPARATOR + currentMove);
+		doBroadcast("POINTSSCORED",currentName + " scored " + currentScore + " points this turn.");
+
+		// check if game is over after this turn
+		if (gameController.isGameOver()) {
+			doGameOver("WIN");
+			return;
+		}
+		else {
+			doBroadcast("SCOREBOARD", getScoreboardString());
+		}
 
 		gameController.nextTurn();
 		doSendBoard();
 		doNotifyTurn();
 	}
 
+	public String getScoreboardString() { // Alice-US-0-US-Bob-US-30
+		StringBuilder sbScores = new StringBuilder();
+		int i = 0;
+		for (ClientHandler client : clients) {
+			String name = client.getName();
+			int score = gameController.getPlayerScore(client.getClientID());
+			sbScores.append(name).append(Protocol.UNIT_SEPARATOR).append(score);
+			if (i != clients.size() - 1) { // in between
+				sbScores.append(Protocol.UNIT_SEPARATOR);
+			}
+			i++;
+		}
+		return sbScores.toString();
+	}
+
+
+
 
 	@Override
 	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
 		int countReady = getCountReady();
 		// UNCOMMENT LATER
-//		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
-//			return false;
-//		}
+		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+			return false;
+		}
 
 		ArrayList<Integer> playerOrder = gameController.getPlayerOrder();
 
@@ -339,22 +368,25 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	@Override
-	public String doPlayerDisconnected(String p) {
-		doBroadcast("PLAYERDISCONNECTED",  p);
-		return p;
+	public void doGameOver(String type) {
+		if (type.equals("WIN") || type.equals("DISCONNECT")) {
+			doBroadcast("GAMEOVER", type + Protocol.UNIT_SEPARATOR + getScoreboardString());
+			gameController.reset();
+		}
 	}
 
-	@Override
-	public String doGameOver() {
-		doBroadcast("GAMEOVER", "GAMEOVER");
-		return "GAMEOVER";
-	}
+	public synchronized void doDisconnect(int clientID, String clientName) {
 
-	public synchronized void doDisconnect(int clientID) {
-		gameController.removePlayerFromOrder(clientID);
 		int np = gameController.getNumPlayers();
-		doBroadcast("INFORMCONNECT", "Player " + (clientID+1) + " disconnected.");
-		doBroadcast("INFORMQUEUE", String.valueOf(getCountReady()) + Protocol.UNIT_SEPARATOR + np);
+		doBroadcast("PLAYERDISCONNECTED",  clientName);
+
+		if (!gameController.isGameRunning()) { // if game not running (queue)
+			doBroadcast("INFORMQUEUE", String.valueOf(getCountReady()) + Protocol.UNIT_SEPARATOR + np);
+		}
+		else { // if game running then its now its over...
+			doGameOver("DISCONNECT"); // disconnect type gameover with scoreboard
+		}
+		gameController.removePlayerFromOrder(clientID);
 	}
 
 
@@ -364,7 +396,7 @@ public class Server implements Runnable, ServerProtocol {
 	/** Start a new ScrabbleServer */
 	public static void main(String[] args) {
 		Server server = new Server();
-		System.out.println("Welcome to the Scrabble Server! Starting...");
+		System.out.println(ANSI.PURPLE + "SCRABBLE SERVER" + ANSI.RESET);
 		new Thread(server).start();
 	}
 	

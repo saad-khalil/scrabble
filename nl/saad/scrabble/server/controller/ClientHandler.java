@@ -109,14 +109,14 @@ public class ClientHandler implements Runnable {
 						sendError("You have not registered yourself.");
 						break;
 					}
-					int numPlayers = 1;
+					int numPlayers = 2; // FIX LATER to 2
 					if (param1 != null) {
 						numPlayers = parseInt(param1);
 						// UNCOMMENT LATER
-//						if (numPlayers < 2) {
-//							sendError(Protocol.Error.E010.getDescription());
-//							break;
-//						}
+						if (numPlayers < 2) {
+							sendError(Protocol.Error.E010.getDescription());
+							break;
+						}
 					}
 
 					ready = true;
@@ -195,7 +195,6 @@ public class ClientHandler implements Runnable {
 
 				case "EXIT":
 					shutdown();
-					sendMessage(srv.doPlayerDisconnected(name));
 					break;
 
 				default:
@@ -241,7 +240,7 @@ public class ClientHandler implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		srv.doDisconnect(clientID);
+		srv.doDisconnect(clientID, name);
 		srv.removeClient(this);
 	}
 }

@@ -16,6 +16,7 @@ public class GameController { // all game helpers necessary
     private int turn;
     private int numPlayers;
     private ScrabbleWordChecker wordChecker;
+    private boolean gameRunning;
     private String turnMove;
     private int turnScore;
     public static final Set<String> curr_words = new HashSet<String>();
@@ -40,6 +41,7 @@ public class GameController { // all game helpers necessary
         }
 
         board.setFirstMove(true);
+        gameRunning = true;
     }
 
 
@@ -73,6 +75,9 @@ public class GameController { // all game helpers necessary
 
     public Board getBoard() { return board; }
 
+    public boolean isGameRunning() { return gameRunning; }
+
+    public void setGameRunning(boolean running) { gameRunning = running; }
 
     public ArrayList<Integer> getPlayerOrder() {
         return playerOrder;
@@ -100,9 +105,6 @@ public class GameController { // all game helpers necessary
     public int getNumPlayers() {
         return numPlayers;
     }
-
-
-
 
     public String getTextBoard() { // convert board to Text String
         int N = Board.N;
@@ -179,7 +181,6 @@ public class GameController { // all game helpers necessary
     }
 
 
-
     public String makeMoveSwap(int pID, String letters) {
         try {
             Hand hand = players.get(pID).getHand();
@@ -194,6 +195,34 @@ public class GameController { // all game helpers necessary
         return  null;
     }
 
+    public void reset() {
+        playerOrder = new ArrayList<Integer>();
+        players = new HashMap<>();
+        wordChecker = new FileStreamScrabbleWordChecker();
+        numPlayers = 0;
+    }
+
+    public boolean isGameOver() {
+        if (bag.isEmpty()) { // bag is empty
+            gameRunning = false; // game no longer running
+            return true;
+        }
+
+        // one of the players ran out of tiles
+        for (Integer pID : playerOrder) {
+            Player p = players.get(pID);
+            if (p == null) {
+                removePlayerFromOrder(pID);
+            }
+
+            if (p.getHand().isEmpty()) {
+                gameRunning = false;
+                return true;
+            }
+        }
+
+        return false;
+    }
 
 
     public static int calculateScore(Word word, Board board) {
@@ -237,5 +266,6 @@ public class GameController { // all game helpers necessary
 
         return  score;
     }
+
 
 }
