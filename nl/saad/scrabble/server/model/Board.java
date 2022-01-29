@@ -21,15 +21,27 @@ public class Board {
 
     public Slot[][] getBoard() { return board; }
 
-    public String getSlotString(int r, int c) {
-        return board[r][c].toString();
-    }
+    public String getSlotString(int r, int c) { return board[r][c].toString(); }
 
     public void setFirstMove(boolean fm) { firstMove = fm; }
     // place tile on given indexes (no checks)
     public void placeTile(int r, int c, Tile tile) { board[r][c].setTile(tile); }
 
     public boolean isSlotEmpty(int r, int c) { return board[r][c].isEmpty(); }
+
+    public boolean isSlotValidOccupied(int r, int c) {
+        return Slot.isValid(r, c) && !isSlotEmpty(r, c);
+    }
+
+    public char[][] getCharBoard() {
+        char[][] charBoard = new char[N][N];
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                charBoard[i][j] = getSlotString(i, j).charAt(0);
+            }
+        }
+        return charBoard;
+    }
 
     public boolean isBoardEmpty() {
         for (int i = 0; i < N; i++) {
@@ -42,22 +54,11 @@ public class Board {
         return true;
     }
 
-    private boolean isSlotValidOccupied(int r, int c) {
-        return Slot.isValid(r, c) && !isSlotEmpty(r, c);
-    }
-
     public String isValidPlacement(Word word, Hand hand) { // null when valid, error otherwise
         int r = word.getRow();
         int c = word.getCol();
         int last_r;
         int last_c;
-
-        System.out.println("have required tiles?");
-
-        // 0. do you even have these required tiles?
-        if (!hand.hasTilesFor(word.getLetters())) {
-            return Protocol.Error.E008.getDescription();
-        }
 
         System.out.println("valid placement slot?");
 
@@ -108,7 +109,9 @@ public class Board {
             // FOR THE REST OF THE WORD
             System.out.println("overlapping word?");
             for (int i = 0; i < WL; i++) { // first letter to last character
-                if (isSlotValidOccupied(r, c)) return null; // OVERLAPPING SLOT
+                if (isSlotValidOccupied(r, c) && board[r][c].getTile().getLetter() != word.getLetters().charAt(i)) { // OVERLAPPING SLOT, MUST BE SAME FOR EVERY CHARACTER AS WELL
+                    return Protocol.Error.E005.getDescription();
+                }
                 // AT LEAST ONE NEIGHBORING SLOTS MUST BE OCCUPIED IF VALID
                 if (word.getDirection() == 'H') { // HORIZONTAL
                     if ( isSlotValidOccupied(r-1, c) || isSlotValidOccupied(r+1, c)) return  null;  // TOP, BOTTOM

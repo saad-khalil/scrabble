@@ -109,14 +109,14 @@ public class ClientHandler implements Runnable {
 						sendError("You have not registered yourself.");
 						break;
 					}
-					int numPlayers = 2; // FIX LATER to 2
+					int numPlayers = 1; // FIX LATER to 2
 					if (param1 != null) {
 						numPlayers = parseInt(param1);
 						// UNCOMMENT LATER
-						if (numPlayers < 2) {
-							sendError(Protocol.Error.E010.getDescription());
-							break;
-						}
+//						if (numPlayers < 2) {
+//							sendError(Protocol.Error.E010.getDescription());
+//							break;
+//						}
 					}
 
 					ready = true;
@@ -128,19 +128,24 @@ public class ClientHandler implements Runnable {
 
 				case "MAKEMOVE":
 					String err = null;
-					if (param1 == null) {
+					boolean skipped = false;
+					String moveType = param1;
+					if (moveType == null) {
 						sendError(Protocol.Error.E003.getDescription());
 						break;
 					}
-					if (param1.equals("WORD")) {
+					if (moveType.equals("WORD")) {
 						if (param2 == null || param3 == null || param4 == null) {
 							sendError(Protocol.Error.E003.getDescription());
 							break;
 						}
 						err = srv.doMoveWord(clientID, param2, param3, param4);
 					}
-					else if (param1.equals("SWAP")) {
-						err = srv.doMoveSwap(clientID,param2);
+					else if (moveType.equals("SKIP")) {
+						skipped = true;
+					}
+					else if (moveType.equals("SWAP")) {
+						err = srv.doMoveSwap(clientID, param2);
 					}
 					else {
 						sendError(Protocol.Error.E003.getDescription());
@@ -153,7 +158,7 @@ public class ClientHandler implements Runnable {
 					}
 					else {
 						System.out.println("Valid move.");
-						srv.doNextTurn();
+						srv.doNextTurn(moveType, name);
 					}
 					break;
 

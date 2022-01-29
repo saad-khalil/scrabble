@@ -19,19 +19,20 @@ public class GameController { // all game helpers necessary
     private boolean gameRunning;
     private String turnMove;
     private int turnScore;
-    public static final Set<String> curr_words = new HashSet<String>();
+    public static final Set<String> all_words_found = new HashSet<String>();
+    public static final Set<String> currWords = new HashSet<String>();
 
 
     public GameController() {
         playerOrder = new ArrayList<Integer>();
         players = new HashMap<>();
-        wordChecker = new FileStreamScrabbleWordChecker();
+        wordChecker = new InMemoryScrabbleWordChecker();
     }
 
     public void startGame() {
         bag = new Bag();
         board = new Board();
-        curr_words.clear();
+        currWords.clear();
         drawnTiles = "";
         turnMove = "";
         turnScore = 0;
@@ -61,9 +62,13 @@ public class GameController { // all game helpers necessary
         return players.get(pID).getScore();
     }
 
-    public void nextTurn() {
+    public void nextTurn(boolean skipped) {
         turn++;
-        board.setFirstMove(false);
+        turnScore = 0;
+        turnMove = "";
+        if (!skipped) {
+            board.setFirstMove(false);
+        }
     }
 
 
@@ -89,13 +94,11 @@ public class GameController { // all game helpers necessary
         Collections.shuffle(playerOrder);
     }
 
-
     public void removePlayerFromOrder(Integer playerIdx) {
         Integer turn = playerOrder.indexOf(playerIdx);
         playerOrder.remove(turn);
         Collections.shuffle(playerOrder);
     }
-
 
     public void setNumPlayers(int np) {
         numPlayers = np;
@@ -122,17 +125,61 @@ public class GameController { // all game helpers necessary
     }
 
 
-
     public String makeMoveWord(int pID, int r, int c, char direction, String letters) {
         char[] alphabet = "abcdefghijklmno".toUpperCase().toCharArray();
         System.out.println(pID + " " + r + " " + c + " " + direction + " " + letters);
+
         Player player = players.get(pID);
         Hand hand = player.getHand();
+
+
+
+        // CHECK IF REQUIRED TILES ARE IN HAND (OR HAVE BLANKS TO COMPENSATE)
+        int LIMIT = 7;
+        int count_blanks = 0;
+        char[] currentLetters = hand.getLetters().toCharArray(); // temporary hand
+        for (int i = 0; i < LIMIT; i++) {
+            if (currentLetters[i] == '!') {
+                count_blanks++;
+            }
+        }
+
+        int ri = r;
+        int ci = c;
+        for (int i = 0; i < letters.length(); i++) {
+            char letter = letters.charAt(i);
+
+            if (board.isSlotEmpty(ri, ci)) {
+                int idx = new String(currentLetters).indexOf(letter);
+                if (idx == -1) { // not in hand
+                    if (count_blanks > 0) { // check if hand has blanks
+                        count_blanks--; // a blank will be used for this character
+                    }
+                    else {
+                        return Protocol.Error.E008.getDescription();
+                    }
+                }
+                else {
+                    currentLetters[idx] = ' ';
+                }
+            }
+
+            if (direction == 'H') ci++; // traverse horizontally over cols
+            else ri++; // over rows otherwise
+        }
+
+
+
         Word word = new Word(r, c, direction, letters);
 
-        System.out.println("valid word?");
-//        System.out.println(wordChecker.isValidWord(letters) != null);
-        //wordChecker.isValidWord(letters) != null
+        // COMPLETE WORD BY ITERATING LEFT RIGHT (H), OR UP DOWN (V) NEIGHBORING SLOTS
+        word = completePrimaryWord(word);
+        System.out.println("WORD USED: " + word.toString());
+
+        if (wordChecker.isValidWord(word.getLetters()) == null) {
+            return Protocol.Error.E006.getDescription();
+        }
+
         boolean isDirectionCorrect = word.getDirection() == 'H' || word.getDirection() == 'V';
         if (!isDirectionCorrect) {
             return "Invalid direction character: " + direction;
@@ -144,14 +191,13 @@ public class GameController { // all game helpers necessary
             if ( err == null) { // SUCCESSFUL MOVE
                 board.placeWord(word, hand);
                 System.out.println("placed");
-                turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[c] + r + Protocol.UNIT_SEPARATOR + letters;
+                turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[word.getCol()] + word.getRow() + Protocol.UNIT_SEPARATOR + letters;
 
-                curr_words.clear();
+                currWords.clear();
                 turnScore  = calculateScore(word, board);
                 player.incrementScore(turnScore );
-                System.out.println("scored");
 
-                System.out.println("Words Created: " + curr_words.toString());
+                System.out.println("Words Created: " + currWords.toString());
                 System.out.println("Score This Turn: " + turnScore );
 
                 drawnTiles = hand.refill();
@@ -172,7 +218,7 @@ public class GameController { // all game helpers necessary
 
 
     private boolean areFormedWordsCorrect() {
-        for (String word : curr_words) {
+        for (String word : currWords) {
             if (wordChecker.isValidWord(word) != null) {
                 return false;
             }
@@ -184,8 +230,8 @@ public class GameController { // all game helpers necessary
     public String makeMoveSwap(int pID, String letters) {
         try {
             Hand hand = players.get(pID).getHand();
-            String newLetters = hand.swap(letters);
-            System.out.println("New letters: " + newLetters);
+            drawnTiles = hand.swap(letters);
+            System.out.println("New letters: " + drawnTiles);
             System.out.println("Bag: " + bag.size());
             turnMove = "SWAP" + Protocol.UNIT_SEPARATOR + letters.length(); // tile count swapped
         }
@@ -225,14 +271,14 @@ public class GameController { // all game helpers necessary
     }
 
 
-    public static int calculateScore(Word word, Board board) {
+    public int calculateScore(Word word, Board board) {
         int bingoScore = 0;
         int score = 0;
         int wordMultiplier = 1;
         int letterMultiplier = 1;
         int r = word.getRow();
         int c = word.getCol();
-        curr_words.add(word.getLetters());
+        currWords.add(word.getLetters());
 
         for (int i = 0; i < word.getLength(); i++) {
             Slot Slot = board.getBoard()[r][c];
@@ -260,6 +306,9 @@ public class GameController { // all game helpers necessary
         score *= wordMultiplier;
 
 
+        score += scoreExtraWords(word); // find and score words other than primary
+
+
         if (word.getLength() == Hand.LIMIT) {  // bingo! (if letters used in word are 7)
             score += 50;
         }
@@ -267,5 +316,182 @@ public class GameController { // all game helpers necessary
         return  score;
     }
 
+    private Word completePrimaryWord(Word primaryWord) {
+        int WL = primaryWord.getLength();
+        char[][] tempBoard = board.getCharBoard();
+        String letters = primaryWord.getLetters();
+        int r = primaryWord.getRow();
+        int c = primaryWord.getCol();
+
+
+        if (primaryWord.getDirection() == 'H') {
+            for (int i = 0; i < WL; i++) { // add current chars to temporary board
+                tempBoard[r][c + i] = letters.charAt(i);
+            }
+
+            int cStartActual = primaryWord.getCol();
+            int cEndActual = cStartActual + WL - 1;
+            int cStart = cStartActual;
+            int cEnd = cEndActual;
+
+
+            while (board.isSlotValidOccupied(r, cStart-1)) { // any tile before?
+                cStart--; // left
+            }
+
+            while (board.isSlotValidOccupied(r, cEnd+1)) { // any tile after tail?
+                cEnd++; // right
+            }
+
+            // cStart and cEnd may point to same indices
+            if (cStart == cStartActual && cEnd == cEndActual) { // same word, no new primary word
+                return primaryWord;
+            }
+            else {
+                StringBuilder sb = new StringBuilder(); // form new letters
+                for (int ci = cStart; ci <= cEnd; ci++) {
+                    char letter = tempBoard[r][ci];
+                    sb.append(letter);
+                }
+                String newLetters = sb.toString();
+                Word newPrimaryWord = new Word(r, cStart, primaryWord.getDirection(), newLetters);
+                System.out.println("New primary horizontal word: " + newPrimaryWord.toString());
+                return  newPrimaryWord;
+            }
+        }
+        else {
+            for (int i = 0; i < WL; i++) { // add current chars to temporary board
+                tempBoard[r+i][c] = letters.charAt(i);
+            }
+
+            int rStartActual = primaryWord.getRow();
+            int rEndActual = rStartActual + WL - 1;
+            int rStart = rStartActual;
+            int rEnd = rEndActual;
+
+            while (board.isSlotValidOccupied(rStart-1, c)) { // any tile before?
+                rStart--; // up
+            }
+
+            while (board.isSlotValidOccupied(rEnd+1, c)) { // any tile after tail?
+                rEnd++; // down
+            }
+
+            System.out.println(rStart);
+            System.out.println(rStartActual);
+
+            System.out.println(rEnd);
+            System.out.println(rEndActual);
+
+            // rStart and rEnd may point to same indices
+            if (rStart == rStartActual && rEnd == rEndActual) { // same word, no new primary word
+                return primaryWord;
+            }
+            else {
+                StringBuilder sb = new StringBuilder(); // form new letters
+                for (int ri = rStart; ri <= rEnd; ri++) {
+                    char letter = tempBoard[ri][c];
+                    sb.append(letter);
+                }
+                String newLetters = sb.toString();
+                Word newPrimaryWord = new Word(rStart, c, primaryWord.getDirection(), newLetters);
+                System.out.println("New primary vertical word: " + newPrimaryWord.toString());
+                return  newPrimaryWord;
+            }
+        }
+        
+    }
+
+    // Scores all the words hooked/parallel to a vertically placed word
+    private int scoreExtraWords(Word primaryWord) {
+        int score = 0;
+        int wordScore = 0;
+        int wordMultiplier = 1;
+        Slot[][] b = board.getBoard();
+
+//        if (primaryWord.getDirection() == 'H') {
+//
+//        }
+//        else {
+//
+//        }
+        //HORIZONTAL
+        int WL = primaryWord.getLength();
+        int r = primaryWord.getRow();
+
+        int cStartActual = primaryWord.getCol();
+        int cEndActual = primaryWord.getCol() + WL - 1;
+
+        int cStart = cStartActual;
+        int cEnd = cEndActual;
+
+        while (board.isSlotValidOccupied(cStart-1, r)) { // any tile before?
+            cStart--; // move left
+        }
+
+        while (board.isSlotValidOccupied(cEnd+1, r)) { // any tile after tail?
+            cEnd++; // move right
+        }
+
+        // cStart and cEnd may point to same word
+
+        // Add word score for any extra words formed
+        if (cStart != cStartActual && cEnd != cEndActual) { // new word
+
+        }
+
+//        for (int i = startColumn; i <= endColumn; i++) {
+//            Slot Slot = b[r][i];
+//            if (i == index.getCol()) {
+//                wordScore += Slot.getTile().getScore() * Slot.getLetterMultiplier();
+//                wordMultiplier *= Slot.getWordMultiplier();
+//            } else {
+//                wordScore += Slot.getTile().getScore();
+//            }
+//        }
+//        score += wordScore * wordMultiplier;
+//        currWords.add(board.getHorizontalWord(r, startColumn, endColumn));
+
+        return score;
+    }
+
+
+//    Slot[][] b = board.getBoard();
+//        for (int i = 0; i < word.getLength(); i++) {
+//        int wordScore = 0;
+//        int wordMultiplier = 1;
+//        int startRow = index.getRow();
+//        int endRow = index.getRow();
+//        int c = index.getCol();
+//
+//        if (word.getDirection() == 'H') {
+//            c++;
+//        } else {
+//            r++;
+//        }
+//
+//        // Find the starting r index of the word
+//        while (Slot.isValid(c, startRow - 1) && !b[startRow - 1][c].isEmpty()) {
+//            startRow--;
+//        }
+//        // Find the tail r index of the word
+//        while (Slot.isValid(c, endRow + 1) && !b[endRow + 1][c].isEmpty()) {
+//            endRow++;
+//        }
+//        // Add word score for any extra words formed
+//        if (startRow != endRow) {
+//            for (int i = startRow; i <= endRow; i++) {
+//                Slot Slot = b[i][c];
+//                if (i == index.getRow()) {
+//                    wordScore += Slot.getTile().getScore() * Slot.getLetterMultiplier();
+//                    wordMultiplier *= Slot.getWordMultiplier();
+//                } else {
+//                    wordScore += Slot.getTile().getScore();
+//                }
+//            }
+//            score += wordScore * wordMultiplier;
+//            currWords.add(board.getVerticalWord(c, startRow, endRow));
+//        }
+//    }
 
 }

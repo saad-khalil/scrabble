@@ -266,37 +266,47 @@ public class Server implements Runnable, ServerProtocol {
 		doNotifyTurn(); // first turn
 	}
 
-	public void doNextTurn() { // after a successful move (new tiles will be drawn in case of both WORD and SWAP)
-		// send new tiles to current player (who did the turn)
-		int currentPID = gameController.getTurnPlayerID();
-		String currentMove = gameController.getTurnMove();
-		int currentScore = gameController.getTurnScore();
-		String currentName = "";
+	public void doNextTurn(String moveType, String clientName) { // after a successful move (new tiles will be drawn in case of both WORD and SWAP)
+		boolean skipped = moveType.equals("SKIP");
+		if (skipped) {
+			doBroadcast("INFORMMOVE",  clientName + Protocol.UNIT_SEPARATOR + "SKIP");
+		}
+		else {
+			doSendBoard(); // first send new board
 
-		// SEND NEWTILES
-		for (ClientHandler client : clients) {
-			if (client.getClientID() == currentPID) {
-				client.sendMessage("NEWTILES" + Protocol.UNIT_SEPARATOR + gameController.getDrawnTiles() + Protocol.MESSAGE_SEPARATOR);
-				currentName = client.getName();
-				break;
+			// send new tiles to current player (who did the turn)
+			int currentPID = gameController.getTurnPlayerID();
+			String currentMove = gameController.getTurnMove();
+			int currentScore = gameController.getTurnScore();
+
+			// SEND NEWTILES
+			for (ClientHandler client : clients) {
+				if (client.getClientID() == currentPID) {
+					client.sendMessage("NEWTILES" + Protocol.UNIT_SEPARATOR + gameController.getDrawnTiles() + Protocol.MESSAGE_SEPARATOR);
+					break;
+				}
+			}
+
+			// inform everyone about the new move, points scored and current scoreboard
+			doBroadcast("INFORMMOVE",clientName + Protocol.UNIT_SEPARATOR + currentMove);
+
+			if (moveType.equals("WORD")) { // points scored on word move only
+				doBroadcast("POINTSSCORED",clientName + " scored " + currentScore + " points this turn.");
+			}
+
+			// check if game is over after this turn
+			if (gameController.isGameOver()) {
+				doGameOver("WIN");
+				return;
+			}
+			else {
+				if (moveType.equals("WORD")) { // scoreboard updated when word move
+					doBroadcast("SCOREBOARD", getScoreboardString());
+				}
 			}
 		}
 
-		// inform everyone about the new move, points scored and current scoreboard
-		doBroadcast("INFORMMOVE",currentName + Protocol.UNIT_SEPARATOR + currentMove);
-		doBroadcast("POINTSSCORED",currentName + " scored " + currentScore + " points this turn.");
-
-		// check if game is over after this turn
-		if (gameController.isGameOver()) {
-			doGameOver("WIN");
-			return;
-		}
-		else {
-			doBroadcast("SCOREBOARD", getScoreboardString());
-		}
-
-		gameController.nextTurn();
-		doSendBoard();
+		gameController.nextTurn(moveType.equals("SWAP") || skipped);
 		doNotifyTurn();
 	}
 
@@ -322,9 +332,9 @@ public class Server implements Runnable, ServerProtocol {
 	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
 		int countReady = getCountReady();
 		// UNCOMMENT LATER
-		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
-			return false;
-		}
+//		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+//			return false;
+//		}
 
 		ArrayList<Integer> playerOrder = gameController.getPlayerOrder();
 
@@ -360,6 +370,7 @@ public class Server implements Runnable, ServerProtocol {
 
 		return true;
 	}
+
 
 	@Override
 	public synchronized void doSendBoard() {

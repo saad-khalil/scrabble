@@ -26,9 +26,7 @@ public class Word {
 
     public char getDirection() { return direction; }
 
-    public int getLength() {
-        return this.length;
-    }
+    public int getLength() { return length; }
     
     public char charAt(int index) {
         return letters.charAt(index);
@@ -40,6 +38,10 @@ public class Word {
         } else {
             return col == c && row <= r && row+length-1 >= r;
         }
+    }
+
+    public String toString() {
+        return letters;
     }
 
 }

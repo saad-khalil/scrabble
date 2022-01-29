@@ -81,51 +81,6 @@ public class Hand {
         }
     }
 
-    public boolean hasTilesFor(String reqLetters) {
-        System.out.println("Letters given: " + reqLetters);
-        System.out.println("Current player tiles: " + getLetters());
-        if (reqLetters.length() > LIMIT) { // letters cannot be more than 7
-            return false;
-        }
-
-        int count_blanks = 0;
-        char[] current_letters = new char[LIMIT]; // temporary hand
-        for (int i = 0; i < hand.size(); i++) {
-            current_letters[i] = hand.get(i).getLetter();
-            if (current_letters[i] == '!') {
-                count_blanks++;
-            }
-        }
-
-        // traverse letters given
-        for (int i = 0; i < reqLetters.length(); i++) {
-            char reqLetter = reqLetters.charAt(i);
-            boolean found = false;
-
-            for (int j = 0; j < LIMIT; j++) {
-                if (current_letters[j] == reqLetter) { // found matching required letter in hand
-                    current_letters[j] = ' '; // remove from temporary hand
-                    found = true;
-                    break;
-                }
-            }
-
-            System.out.println("current_letters: " + Arrays.toString(current_letters));
-
-            if (!found) { // some letter was not found == hand does not have tiles for it
-
-                if (count_blanks > 0) { // check if hand has blanks
-                    count_blanks--; // a blank will be used for this character (gameController will remove its tile from your hand later)
-                }
-                else {
-                    return false;
-                }
-            }
-        }
-
-        return true; // all letters found
-    }
-
     // get tile from letter if present
     public Tile getTile(char letter) throws Exception {
         if (hasLetter(letter)) { // if tile with letter found
