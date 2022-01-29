@@ -19,8 +19,8 @@ public class GameController { // all game helpers necessary
     private boolean gameRunning;
     private String turnMove;
     private int turnScore;
-    public static final Set<String> all_words_found = new HashSet<String>();
-    public static final Set<String> currWords = new HashSet<String>();
+    public static final Set<String> allWordsFound = new HashSet<>();
+    public static final Set<String> currWords = new HashSet<>();
 
 
     public GameController() {
@@ -33,6 +33,7 @@ public class GameController { // all game helpers necessary
         bag = new Bag();
         board = new Board();
         currWords.clear();
+        allWordsFound.clear();
         drawnTiles = "";
         turnMove = "";
         turnScore = 0;
@@ -190,6 +191,8 @@ public class GameController { // all game helpers necessary
 
             if ( err == null) { // SUCCESSFUL MOVE
                 board.placeWord(word, hand);
+                allWordsFound.add(word.getLetters()); // add to game dictionary unique
+
                 System.out.println("placed");
                 turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[word.getCol()] + word.getRow() + Protocol.UNIT_SEPARATOR + letters;
 
