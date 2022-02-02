@@ -1,4 +1,4 @@
-package nl.saad.scrabble.client;
+package nl.saad.scrabble.client.controller;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -6,12 +6,13 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
+import nl.saad.scrabble.client.view.ClientTUI;
 import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.exceptions.ProtocolException;
 import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.ClientProtocol;
 import nl.saad.scrabble.protocol.Protocol;
-import nl.saad.scrabble.server.view.utils.ANSI;
+import nl.saad.scrabble.utils.ANSI;
 
 
 public class Client implements Runnable, ClientProtocol {
@@ -64,7 +65,7 @@ public class Client implements Runnable, ClientProtocol {
 		while (serverSock == null) {
 			String host = "127.0.0.1";
 
-			int port = 4000; //view.getInt("Please enter the server port:");
+			int port = view.getInt("Please enter the server port:");
 
 			// try to open a Socket to the server
 			try {

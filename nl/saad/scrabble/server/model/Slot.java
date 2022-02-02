@@ -16,20 +16,6 @@ public class Slot {
     public void setTile(Tile tile) { this.tile = tile; }
     
     public boolean isEmpty() { return getTile() == null; }
-
-    public int getMultiplier() {
-        switch (premiumType) {
-            case "C":
-            case "2W":
-            case "2L":
-                return 2;
-            case "3W":
-            case "3L":
-                return 3;
-            default:
-                return 1;
-        }
-    }
     
     @Override
     public String toString() {

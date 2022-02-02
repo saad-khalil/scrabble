@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * A Scrabble Word Checker, which stores all words in Memory.
  */
-public class InMemoryScrabbleWordChecker implements  ScrabbleWordChecker{
+public class InMemoryScrabbleWordChecker implements ScrabbleWordChecker {
 
     /**
      * A static variable to store all words in memory

@@ -1,8 +1,9 @@
-package nl.saad.scrabble.client;
+package nl.saad.scrabble.client.controller;
 
+import nl.saad.scrabble.client.view.ClientTUI;
 import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.Protocol;
-import nl.saad.scrabble.server.view.utils.ANSI;
+import nl.saad.scrabble.utils.ANSI;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -1,15 +1,9 @@
-package nl.saad.scrabble.client;
+package nl.saad.scrabble.client.view;
 
-import nl.saad.scrabble.exceptions.ExitProgram;
-import nl.saad.scrabble.exceptions.ServerUnavailableException;
 import nl.saad.scrabble.protocol.Protocol;
-import nl.saad.scrabble.server.view.ServerView;
-import nl.saad.scrabble.server.view.utils.ANSI;
+import nl.saad.scrabble.utils.ANSI;
 
 import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.util.Locale;
-import java.util.Objects;
 import java.util.Scanner;
 
 public class ClientTUI implements ClientView {

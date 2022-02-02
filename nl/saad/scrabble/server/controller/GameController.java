@@ -3,8 +3,9 @@ package nl.saad.scrabble.server.controller;
 import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.server.model.*;
 
-import java.lang.reflect.Array;
 import java.util.*;
+
+import static java.lang.Math.max;
 
 
 public class GameController { // all game helpers necessary
@@ -22,12 +23,16 @@ public class GameController { // all game helpers necessary
     public static final Set<String> allWordsFound = new HashSet<>();
     public static final Set<String> currWordStrings = new HashSet<>();
     public static final ArrayList<Word> currWords = new ArrayList<>();
+    public static final int[] lastFourTurnScores = new int[4];
 
 
     public GameController() {
         playerOrder = new ArrayList<Integer>();
         players = new HashMap<>();
         wordChecker = new InMemoryScrabbleWordChecker();
+        for (int i = 0; i < 4; i++) {
+            lastFourTurnScores[i] = -1;
+        }
     }
 
     public void startGame() {
@@ -65,6 +70,8 @@ public class GameController { // all game helpers necessary
     }
 
     public void nextTurn(boolean skipped) {
+        lastFourTurnScores[turn % 4] = turnScore;
+        System.out.println(lastFourTurnScores.toString());
         turn++;
         turnScore = 0;
         turnMove = "";
@@ -147,17 +154,15 @@ public class GameController { // all game helpers necessary
 
     public String makeMoveWord(int pID, int r, int c, char direction, String letters) {
         char[] alphabet = "abcdefghijklmno".toUpperCase().toCharArray();
-        System.out.println(pID + " " + r + " " + c + " " + direction + " " + letters);
 
         Player player = players.get(pID);
         Hand hand = player.getHand();
 
 
         // CHECK IF REQUIRED TILES ARE IN HAND (OR HAVE BLANKS TO COMPENSATE)
-        int LIMIT = 7;
         int count_blanks = 0;
         char[] currentLetters = hand.getLetters().toCharArray(); // temporary hand
-        for (int i = 0; i < LIMIT; i++) {
+        for (int i = 0; i < Hand.LIMIT; i++) {
             if (currentLetters[i] == '!') {
                 count_blanks++;
             }
@@ -203,32 +208,40 @@ public class GameController { // all game helpers necessary
 
         try {
             String err = board.isValidPlacement(word, hand); // check if indexes and placement are valid then
-
-            if (err == null) { // SUCCESSFUL MOVE
-                board.placeWord(word, hand);
-                allWordsFound.add(word.getLetters()); // add to game dictionary unique
-
-                System.out.println("placed");
-                turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[word.getCol()] + word.getRow() + Protocol.UNIT_SEPARATOR + letters;
-
-
-                turnScore = calculateScore(word, board);
-                player.incrementScore(turnScore);
-
-                // all unique words found this turn
-                allWordsFound.addAll(currWordStrings);
-
-                System.out.println("Unique Words Created: " + currWordStrings.toString());
-                System.out.println("Score This Turn: " + turnScore);
-
-                drawnTiles = hand.refill();
-                System.out.println("refilled");
-                System.out.println(drawnTiles);
-
-                System.out.println("Bag: " + bag.size());
-            } else {
-                return err;
+            if (err != null) {
+                return  err;
             }
+
+            if (!scanNeighborWords(word)) { // also adds them to list if no conflict
+                return "Neighboring words conflict / become invalid. Cannot place.";
+            }
+
+            currWordStrings.add(word.getLetters());
+            currWords.add(word);
+
+            // SUCCESSFUL MOVE
+            board.placeWord(word, hand);
+            allWordsFound.add(word.getLetters()); // add to game dictionary unique
+
+            turnMove = "WORD" + Protocol.UNIT_SEPARATOR + alphabet[word.getCol()] + word.getRow() + Protocol.UNIT_SEPARATOR + letters;
+
+
+            turnScore = calculateScore(word);
+            lastFourTurnScores[turn % 4] = turnScore;
+
+            player.incrementScore(turnScore);
+
+            // all unique words found this turn
+            allWordsFound.addAll(currWordStrings);
+
+
+            System.out.println("Unique Words Created: " + currWordStrings.toString());
+            System.out.println("Score This Turn: " + turnScore);
+
+            drawnTiles = hand.refill();
+
+            System.out.println("Bag: " + bag.size());
+
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -243,6 +256,7 @@ public class GameController { // all game helpers necessary
             System.out.println("New letters: " + drawnTiles);
             System.out.println("Bag: " + bag.size());
             turnMove = "SWAP" + Protocol.UNIT_SEPARATOR + letters.length(); // tile count swapped
+            lastFourTurnScores[turn % 4] = turnScore;
         } catch (Exception e) {
             return e.getMessage();
         }
@@ -257,6 +271,18 @@ public class GameController { // all game helpers necessary
     }
 
     public boolean isGameOver() {
+        boolean nonZeroTurnFound = false;
+        for (int i = 0; i < 4; i++) {
+            System.out.println(lastFourTurnScores[i]);
+             if (lastFourTurnScores[i] != 0) {
+                 nonZeroTurnFound = true;
+             }
+        }
+        if (!nonZeroTurnFound) { // all zero turns before
+            gameRunning = false;
+            return true;
+        }
+
         if (bag.isEmpty()) { // bag is empty
             gameRunning = false; // game no longer running
             return true;
@@ -268,8 +294,7 @@ public class GameController { // all game helpers necessary
             if (p == null) {
                 removePlayerFromOrder(pID);
             }
-
-            if (p.getHand().isEmpty()) {
+            else if (p.getHand().isEmpty()) {
                 gameRunning = false;
                 return true;
             }
@@ -279,43 +304,14 @@ public class GameController { // all game helpers necessary
     }
 
 
-    public int calculateScore(Word word, Board board) {
-        int bingoScore = 0;
+    public int calculateScore(Word word) {
         int score = 0;
-        int wordMultiplier = 1;
-        int letterMultiplier = 1;
-        int r = word.getRow();
-        int c = word.getCol();
-        currWordStrings.add(word.getLetters());
 
-        for (int i = 0; i < word.getLength(); i++) {
-            Slot Slot = board.getBoard()[r][c];
-
-            switch (Slot.getPremiumType()) {
-                case "C":
-                case "2L":
-                    letterMultiplier = 2;
-                    break;
-                case "2W":
-                    wordMultiplier = 2;
-                    break;
-                case "3W":
-                    wordMultiplier = 3;
-                    break;
-                case "3L":
-                    letterMultiplier = 3;
-                    break;
-            }
-            score += Slot.getTile().getScore() * letterMultiplier;
-
-            if (word.getDirection() == 'H') c++;
-            else r++;
+        for (Word w : currWords) {
+            int wordScore = calculateWordScore(w);
+            score += wordScore;
+            System.out.println("Scoring " + w + " - " + wordScore);
         }
-        score *= wordMultiplier;
-
-
-        score += scoreExtraWords(word); // find and score words other than primary
-
 
         if (word.getLength() == Hand.LIMIT) {  // bingo! (if letters used in word are 7)
             score += 50;
@@ -324,7 +320,45 @@ public class GameController { // all game helpers necessary
         return score;
     }
 
-    private int scoreExtraWords(Word word) {
+
+    public int calculateWordScore(Word word) {
+        int score = 0;
+        int wordMultiplier = 1;
+        int letterMultiplier = 1;
+        int r = word.getRow();
+        int c = word.getCol();
+
+        for (int i = 0; i < word.getLength(); i++) {
+            Slot Slot = board.getSlot(r, c);
+
+            switch (Slot.getPremiumType()) {
+                case "C":
+                case "2W":
+                    wordMultiplier = max(2, wordMultiplier);
+                    break;
+                case "2L":
+                    letterMultiplier = 2;
+                    break;
+                case "3W":
+                    wordMultiplier = 3;
+                    break;
+                case "3L":
+                    letterMultiplier = 3;
+                    break;
+                default:
+                    letterMultiplier = 1;
+            }
+            score += Slot.getTile().getScore() * letterMultiplier;
+
+            if (word.getDirection() == 'H') c++;
+            else r++;
+        }
+
+        return score * wordMultiplier;
+    }
+
+    //  SCANS neighbors for valid words adding them to turn dictionary, returns false if invalid found
+    private boolean scanNeighborWords(Word word) {
         int r = word.getRow();
         int c = word.getCol();
         String letters = word.getLetters();
@@ -339,8 +373,10 @@ public class GameController { // all game helpers necessary
             System.out.println(newWord);
 
             // 1. not a character, 2. is a valid word and 3. not inside curr word strings or 4. even other words found in the game
-            if (newWord.getLength() != 1 && wordChecker.isValidWord(newLetters) != null && !currWordStrings.contains(newLetters) && !allWordsFound.contains(newLetters)) {
-                System.out.println("its unique");
+            if (newWord.getLength() != 1 && !currWordStrings.contains(newLetters) && !allWordsFound.contains(newLetters)) {
+                if (wordChecker.isValidWord(newLetters) == null) { // invalid word found in neighbors
+                    return false;
+                }
                 currWordStrings.add(newLetters);
                 currWords.add(newWord);
             }
@@ -349,17 +385,10 @@ public class GameController { // all game helpers necessary
             else r++;
         }
 
-        return 0;
+        return true;
     }
 
-//    private boolean areFormedWordsCorrect() {
-//        for (String word : currWordStrings) {
-//            if (wordChecker.isValidWord(word) != null) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
+
 
 
     private Word completeWord(Word primaryWord) {
@@ -419,12 +448,6 @@ public class GameController { // all game helpers necessary
             while (board.isSlotValidOccupied(rEnd + 1, c)) { // any tile after tail?
                 rEnd++; // down
             }
-
-            System.out.println(rStart);
-            System.out.println(rStartActual);
-
-            System.out.println(rEnd);
-            System.out.println(rEndActual);
 
             // rStart and rEnd may point to same indices
             if (rStart == rStartActual && rEnd == rEndActual) { // same word, no new primary word

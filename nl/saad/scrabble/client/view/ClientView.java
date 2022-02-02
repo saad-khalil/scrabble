@@ -1,4 +1,4 @@
-package nl.saad.scrabble.client;
+package nl.saad.scrabble.client.view;
 
 import java.net.InetAddress;
 
@@ -15,7 +15,7 @@ public interface ClientView {
 	/**
 	 * Writes the given message to standard output.
 	 * 
-	 * @param msg the message to write to the standard output.
+	 * @param message the message to write to the standard output.
 	 */
 	public void showMessage(String message);
 

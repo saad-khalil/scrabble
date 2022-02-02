@@ -27,6 +27,8 @@ public interface ServerProtocol {
 	 */
 	public String doMoveSwap(int clientID, String letters);
 
+	String doMoveSkip(int clientID);
+
 	/**
 	 *
 	 *
@@ -36,6 +38,8 @@ public interface ServerProtocol {
 	 */
 	public void doNotifyChat(String name, String msg);
 
+	void doNotifyTurn();
+
 	/**
 	 *
 	 *
@@ -44,6 +48,8 @@ public interface ServerProtocol {
 	 * @return
 	 */
 	public String doWelcome(String name, boolean canChat);
+
+	void doNextTurn(String moveType, String clientName);
 
 	/**
 	 *
@@ -90,6 +96,7 @@ public interface ServerProtocol {
 	 * @param
 	 * @return
 	 */
-	public void doPLAYERCONNECTED(String recentConnect);
+	public void doPlayerConnected(String recentConnect);
 
+	void doDisconnect(int clientID, String clientName);
 }

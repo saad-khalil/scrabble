@@ -9,7 +9,7 @@ import java.io.PrintStream;
 //import static org.hamcrest.CoreMatchers.not;
 import org.junit.jupiter.api.*;
 
-import nl.saad.scrabble.client.Client;
+import nl.saad.scrabble.client.controller.Client;
 import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.exceptions.ProtocolException;
 import nl.saad.scrabble.exceptions.ServerUnavailableException;

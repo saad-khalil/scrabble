@@ -19,6 +19,8 @@ public class Board {
         }
     }
 
+    public Slot getSlot(int r, int c) { return board[r][c]; }
+
     public Slot[][] getBoard() { return board; }
 
     public String getSlotString(int r, int c) { return board[r][c].toString(); }
@@ -43,16 +45,6 @@ public class Board {
         return charBoard;
     }
 
-    public boolean isBoardEmpty() {
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (!board[i][j].isEmpty()) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
 
     public String isValidPlacement(Word word, Hand hand) { // null when valid, error otherwise
         int r = word.getRow();

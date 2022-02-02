@@ -1,4 +1,4 @@
-package nl.saad.scrabble.server.view.utils;
+package nl.saad.scrabble.utils;
 
 public interface ANSI {
 	// Reset

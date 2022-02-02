@@ -1,7 +1,6 @@
 package nl.saad.scrabble.server.controller;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +12,7 @@ import nl.saad.scrabble.exceptions.ExitProgram;
 import nl.saad.scrabble.protocol.Protocol;
 import nl.saad.scrabble.protocol.ServerProtocol;
 import nl.saad.scrabble.server.view.ServerTUI;
-import nl.saad.scrabble.server.view.utils.ANSI;
+import nl.saad.scrabble.utils.ANSI;
 
 import static java.lang.Integer.parseInt;
 
@@ -74,7 +73,7 @@ public class Server implements Runnable, ServerProtocol {
 					ClientHandler handler = new ClientHandler(sock, this, null, next_client_no);
 					new Thread(handler).start();
 					clients.add(handler);
-					doPLAYERCONNECTED("New client [" + idName + "] connected!");
+					doPlayerConnected("New client [" + idName + "] connected!");
 					gameController.addPlayerToOrder(next_client_no); // add client idx to player order
 					next_client_no++;
 				}
@@ -157,7 +156,7 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 	@Override
-	public void doPLAYERCONNECTED(String recentConnect) {
+	public void doPlayerConnected(String recentConnect) {
 		String msg = "Current Clients: " + clients.size() + ". " + recentConnect;
 		for (ClientHandler client : clients) { // broadcast
 			client.sendMessage("PLAYERCONNECTED" + Protocol.UNIT_SEPARATOR + msg + Protocol.MESSAGE_SEPARATOR);
@@ -195,15 +194,32 @@ public class Server implements Runnable, ServerProtocol {
 		int c = colRow.charAt(0) - 'A';
 		char dir = direction.toUpperCase().charAt(0);
 
-		return gameController.makeMoveWord(clientID, r, c, dir, letters);
+		String err = gameController.makeMoveWord(clientID, r, c, dir, letters);
+		if (err != null) {
+			gameController.clearCurrWords();
+		}
+		return  err;
 	}
 
+	@Override
 	public String doMoveSwap(int clientID, String letters) {
 		if (gameController.getTurnPlayerID() != clientID) { // not your turn
 			return "Not your turn.";
 		}
 
-		return gameController.makeMoveSwap(clientID, letters);
+		String err = gameController.makeMoveSwap(clientID, letters);
+		if (err != null) {
+			gameController.clearCurrWords();
+		}
+		return  err;
+	}
+
+	@Override
+	public String doMoveSkip(int clientID) {
+		if (gameController.getTurnPlayerID() != clientID) { // not your turn
+			return "Not your turn.";
+		}
+		return  null;
 	}
 
 	@Override
@@ -215,7 +231,7 @@ public class Server implements Runnable, ServerProtocol {
 		}
 	}
 
-
+	@Override
 	public void doNotifyTurn() {
 		int turnPlayerID = gameController.getTurnPlayerID();
 
@@ -230,7 +246,7 @@ public class Server implements Runnable, ServerProtocol {
 		}
 	}
 
-
+	@Override
 	public String doWelcome(String name, boolean canChat) {
 		String welcomeMsg = "WELCOME" + Protocol.UNIT_SEPARATOR + name;
 		if (canChat) {
@@ -266,6 +282,7 @@ public class Server implements Runnable, ServerProtocol {
 		doNotifyTurn(); // first turn
 	}
 
+	@Override
 	public void doNextTurn(String moveType, String clientName) { // after a successful move (new tiles will be drawn in case of both WORD and SWAP)
 		boolean skipped = moveType.equals("SKIP");
 		if (skipped) {
@@ -292,21 +309,19 @@ public class Server implements Runnable, ServerProtocol {
 
 			if (moveType.equals("WORD")) { // points scored on word move only
 				doBroadcast("POINTSSCORED",clientName + " scored " + currentScore + " points this turn.");
-			}
-
-			// check if game is over after this turn
-			if (gameController.isGameOver()) {
-				doGameOver("WIN");
-				return;
-			}
-			else {
-				if (moveType.equals("WORD")) { // scoreboard updated when word move
-					doBroadcast("SCOREBOARD", getScoreboardString());
-				}
+				 // scoreboard updated when word move
+				doBroadcast("SCOREBOARD", getScoreboardString());
 			}
 		}
 
 		gameController.nextTurn(moveType.equals("SWAP") || skipped);
+
+		// check if game is over after this turn (4 skips/swaps)
+		if (gameController.isGameOver()) {
+			doGameOver("WIN");
+			return;
+		}
+
 		doNotifyTurn();
 	}
 
@@ -326,15 +341,13 @@ public class Server implements Runnable, ServerProtocol {
 	}
 
 
-
-
 	@Override
 	public synchronized boolean doInformQueue(int playerIdx, int requestedNumPlayers) {
 		int countReady = getCountReady();
 		// UNCOMMENT LATER
-//		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
-//			return false;
-//		}
+		if (countReady >= 2 &&  requestedNumPlayers != gameController.getNumPlayers()) { // requested once, cannot change number of players in queue
+			return false;
+		}
 
 		ArrayList<Integer> playerOrder = gameController.getPlayerOrder();
 
@@ -386,6 +399,7 @@ public class Server implements Runnable, ServerProtocol {
 		}
 	}
 
+	@Override
 	public synchronized void doDisconnect(int clientID, String clientName) {
 
 		int np = gameController.getNumPlayers();
