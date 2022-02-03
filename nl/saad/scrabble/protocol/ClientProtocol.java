@@ -45,6 +45,6 @@ public interface ClientProtocol {
 	void doSendAnnounce(String c) throws ServerUnavailableException;
 
 
-	public void sendExit(String c) throws ServerUnavailableException;
+	public void doSendExit(String c) throws ServerUnavailableException;
 
 }

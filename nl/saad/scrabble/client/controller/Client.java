@@ -164,7 +164,7 @@ public class Client implements Runnable, ClientProtocol {
 				doMakeMove(formattedCommand);
 				break;
 			case "EXIT":
-				sendExit(formattedCommand);
+				doSendExit(formattedCommand);
 				break;
 			case "ANNOUNCE":
 				doSendAnnounce(formattedCommand);
@@ -237,9 +237,8 @@ public class Client implements Runnable, ClientProtocol {
 		sendMessage(c);
 	}
 
-
 	@Override
-	public void sendExit(String c) throws ServerUnavailableException {
+	public void doSendExit(String c) throws ServerUnavailableException {
 		sendMessage(c);
 		closeConnection();
 	}
